@@ -65,7 +65,7 @@ src/
 │   │       ├── index.ts     # Database connection
 │   │       └── schema.ts    # Drizzle schema definitions
 │   ├── schemas/
-│   │   └── auth.ts          # ArkType validation schemas
+│   │   └── auth.ts          # Valibot validation schemas
 │   └── utils.ts             # Utility functions
 ├── routes/
 │   ├── auth.remote.ts       # Remote functions for auth
@@ -158,9 +158,11 @@ export const getPosts = query(async () => {
  return posts;
 });
 
-// With ArkType validation
-const getPostSchema = type({
- slug: 'string>0'
+// With Valibot validation
+import * as v from 'valibot';
+
+const getPostSchema = v.object({
+ slug: v.pipe(v.string(), v.minLength(1))
 });
 
 export const getPost = query(getPostSchema, async ({ slug }) => {
@@ -169,12 +171,12 @@ export const getPost = query(getPostSchema, async ({ slug }) => {
  return post;
 });
 
-// More complex validation with ArkType
-const searchPostsSchema = type({
- query: 'string>0',
- limit: 'number>=1<=100',
- offset: 'number>=0',
- category: 'string|undefined'
+// More complex validation with Valibot
+const searchPostsSchema = v.object({
+ query: v.pipe(v.string(), v.minLength(1)),
+ limit: v.pipe(v.number(), v.minValue(1), v.maxValue(100)),
+ offset: v.pipe(v.number(), v.minValue(0)),
+ category: v.optional(v.string())
 });
 
 export const searchPosts = query(searchPostsSchema, async ({ query, limit, offset, category }) => {
@@ -210,17 +212,17 @@ Usage in component:
 
 #### 3. Command Functions
 
-For write operations that can be called from anywhere. Supports ArkType validation.
+For write operations that can be called from anywhere. Supports Valibot validation.
 Commands are the equivalents of POSTS to an API, we should only use it when forms are not the right solution for the problem, but forms should be our preferred solution.
 
 ```typescript
 import { command } from '$app/server';
-import { type } from 'arktype';
+import * as v from 'valibot';
 import { error } from '@sveltejs/kit';
 
-// Simple command with ArkType validation
-const likeSchema = type({
- postId: 'string>0'
+// Simple command with Valibot validation
+const likeSchema = v.object({
+ postId: v.pipe(v.string(), v.minLength(1))
 });
 
 export const incrementLikes = command(likeSchema, async ({ postId }) => {
@@ -242,14 +244,14 @@ export const incrementLikes = command(likeSchema, async ({ postId }) => {
 });
 
 // More complex example with nested validation
-const updateProfileSchema = type({
- userId: 'string>0',
- profile: {
-  name: 'string>=2<=100',
-  bio: 'string<=500|undefined',
-  email: 'string.email',
-  age: 'number>=13<=120|undefined'
- }
+const updateProfileSchema = v.object({
+ userId: v.pipe(v.string(), v.minLength(1)),
+ profile: v.object({
+  name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
+  bio: v.optional(v.pipe(v.string(), v.maxLength(500))),
+  email: v.pipe(v.string(), v.email()),
+  age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120)))
+ })
 });
 
 export const updateProfile = command(updateProfileSchema, async ({ userId, profile }) => {
@@ -377,41 +379,45 @@ This project currently uses form functions for authentication (`src/routes/auth.
 </form>
 ```
 
-### Validation with ArkType
+### Validation with Valibot
 
-This project uses ArkType for runtime validation. Query and command functions support automatic validation:
+This project uses Valibot for runtime validation. Query and command functions support automatic validation:
 
 ```typescript
-import { type } from 'arktype';
+import * as v from 'valibot';
 
 // Basic types
-const userIdSchema = type('string>0');
-const emailSchema = type('string.email');
-const ageSchema = type('number>=13<=120');
+const userIdSchema = v.pipe(v.string(), v.minLength(1));
+const emailSchema = v.pipe(v.string(), v.email());
+const ageSchema = v.pipe(v.number(), v.minValue(13), v.maxValue(120));
 
 // Complex object validation
-const userSchema = type({
- name: 'string>=2<=100',
- email: 'string.email',
- password: 'string>=8',
- age: 'number>=13<=120|undefined',
- tags: 'string[]<=10' // Array with max 10 items
+const userSchema = v.object({
+ name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
+ email: v.pipe(v.string(), v.email()),
+ password: v.pipe(v.string(), v.minLength(8)),
+ age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120))),
+ tags: v.pipe(v.array(v.string()), v.maxLength(10)) // Array with max 10 items
 });
 
 // Union types
-const statusSchema = type("'active'|'inactive'|'pending'");
+const statusSchema = v.union([
+ v.literal('active'),
+ v.literal('inactive'),
+ v.literal('pending')
+]);
 
 // Nested objects
-const postSchema = type({
- title: 'string>0<=200',
- content: 'string>0',
- author: {
-  id: 'string>0',
-  name: 'string'
- },
- tags: 'string[]',
- published: 'boolean',
- publishedAt: 'Date|undefined'
+const postSchema = v.object({
+ title: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
+ content: v.pipe(v.string(), v.minLength(1)),
+ author: v.object({
+  id: v.pipe(v.string(), v.minLength(1)),
+  name: v.string()
+ }),
+ tags: v.array(v.string()),
+ published: v.boolean(),
+ publishedAt: v.optional(v.date())
 });
 ```
 
@@ -430,14 +436,14 @@ export const createPost = form(async (data) => {
 ### Best Practices
 
 1. **Validation**:
-   - Use ArkType schemas for query/command functions
+   - Use Valibot schemas for query/command functions
    - Manually validate FormData in form functions
    - Define reusable schemas in separate files
 2. **Error Messages**: Use descriptive error messages with appropriate HTTP status codes
 3. **Loading States**: Implement loading states for better UX
 4. **Type Safety**:
    - Use `isHttpError` for proper error typing
-   - ArkType provides automatic TypeScript types via `.infer`
+   - Valibot provides automatic TypeScript types via `v.InferOutput`
 5. **Organization**:
    - Group related remote functions in single files (e.g., `auth.remote.ts`)
    - Keep validation schemas close to their usage
@@ -506,7 +512,7 @@ DATABASE_URL="postgres://root:mysecretpassword@localhost:5432/local"
 - Type-safe session handling
 - Proper error handling and user feedback
 - Loading states for better UX
-- Form validation with ArkType schemas
+- Form validation with Valibot schemas
 
 ## Component Library
 

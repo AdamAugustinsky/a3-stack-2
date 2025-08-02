@@ -11,6 +11,5 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true
 	},
-	// @ts-expect-error getrequestevent is bugged as fuck
 	plugins: [sveltekitCookies(getRequestEvent)]
 });

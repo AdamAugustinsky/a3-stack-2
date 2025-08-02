@@ -6,6 +6,8 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { signup } from '@routes/auth.remote';
 	import { isHttpError } from '@sveltejs/kit';
+	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 
 	let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
 
@@ -21,7 +23,6 @@
 		</Card.Header>
 		<Card.Content>
 			<form
-				method="POST"
 				{...signup.enhance(async ({ submit }) => {
 					signUpError = undefined;
 					isLoading = true;
@@ -102,9 +103,11 @@
 							/>
 						</div>
 						{#if signUpError}
-							<div class="rounded-md bg-red-50 p-4">
-								<div class="text-sm text-red-700">{signUpError}</div>
-							</div>
+							<Alert.Root variant="destructive">
+								<CircleAlertIcon class="size-4" />
+								<Alert.Title>Error</Alert.Title>
+								<Alert.Description>{signUpError}</Alert.Description>
+							</Alert.Root>
 						{/if}
 						<Button type="submit" class="w-full" disabled={isLoading}>
 							{isLoading ? 'Creating account...' : 'Create account'}

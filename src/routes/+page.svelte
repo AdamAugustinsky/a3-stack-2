@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
+	import CreateTodoDialog from './(protected)/todos/components/create-todo-dialog.svelte';
 	const session = authClient.useSession();
 </script>
 
@@ -29,3 +30,5 @@
 		</button>
 	{/if}
 </div>
+
+<CreateTodoDialog open={true} />

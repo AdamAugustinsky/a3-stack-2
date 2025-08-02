@@ -6,6 +6,8 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { signin } from '@routes/auth.remote';
 	import { isHttpError } from '@sveltejs/kit';
+	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 
 	let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
 
@@ -85,9 +87,11 @@
 							<Input id="password" name="password" type="password" required disabled={isLoading} />
 						</div>
 						{#if loginError}
-							<div class="rounded-md bg-red-50 p-4">
-								<div class="text-sm text-red-700">{loginError}</div>
-							</div>
+							<Alert.Root variant="destructive">
+								<CircleAlertIcon class="size-4" />
+								<Alert.Title>Error</Alert.Title>
+								<Alert.Description>{loginError}</Alert.Description>
+							</Alert.Root>
 						{/if}
 						<Button type="submit" class="w-full" disabled={isLoading}>
 							{isLoading ? 'Signing in...' : 'Login'}
