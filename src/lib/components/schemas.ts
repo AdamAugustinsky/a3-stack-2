@@ -1,24 +1,13 @@
-import { type } from "arktype";
+import { z } from "zod/v4";
 
-export const Task = type({
-  id: "number",
-  text: "string",
-  completed: "boolean",
-  label: "'bug' | 'feature' | 'documentation'",
-  status: "'backlog' | 'todo' | 'in progress' | 'done' | 'canceled'",
-  priority: "'low' | 'medium' | 'high'",
+export const schema = z.object({
+	id: z.number(),
+	header: z.string(),
+	type: z.string(),
+	status: z.string(),
+	target: z.string(),
+	limit: z.string(),
+	reviewer: z.string(),
 });
 
-export type Task = typeof Task.infer;
-export type NewTask = Omit<Task, "id">;
-
-// Generic Schema type for data-table components
-export interface Schema {
-  id: number;
-  header: string;
-  type: string;
-  status: string;
-  target?: number | string;
-  reviewer?: string;
-  [key: string]: string | number | boolean | undefined;
-}
+export type Schema = z.infer<typeof schema>;

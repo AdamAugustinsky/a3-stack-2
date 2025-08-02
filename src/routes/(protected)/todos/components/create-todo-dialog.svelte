@@ -21,6 +21,14 @@
 	let createTodoError = $state<string | undefined>();
 	let fieldErrors = $state<Record<string, string>>({});
 	let isLoading = $state(false);
+
+	// Reset form state when dialog closes
+	$effect(() => {
+		if (!open) {
+			createTodoError = undefined;
+			fieldErrors = {};
+		}
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -39,7 +47,8 @@
 				isLoading = true;
 				try {
 					await submit();
-					// Success - redirect will be handled automatically by SvelteKit
+					// Success - close dialog and reset form
+					open = false;
 				} catch (error) {
 					if (isHttpError(error)) {
 						if (isValidationError(error.body)) {

@@ -13,7 +13,6 @@
 	let showCreateDialog = $state(false);
 	let selectedTodos = $state<Task[]>([]);
 	let clearSelectionSignal = $state(0);
-	let deletingId = $state<number | null>(null);
 	let isBulkOperationPending = $state(false);
 
 	// Use the todos from remote query function
@@ -24,13 +23,10 @@
 	}
 
 	async function handleDeleteTodo(id: number) {
-		deletingId = id;
 		try {
 			await deleteTodo({ id });
-			deletingId = null;
 		} catch (error) {
 			console.error('Failed to delete todo:', error);
-			deletingId = null;
 		}
 	}
 
@@ -173,7 +169,7 @@
 				<p class="text-muted-foreground">No tasks yet. Add one above to get started!</p>
 			</div>
 		{/if}
-	{:catch error}
+	{:catch}
 		<div class="py-8 text-center">
 			<p class="text-destructive">Failed to load tasks. Please try again.</p>
 		</div>

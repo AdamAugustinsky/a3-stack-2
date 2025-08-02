@@ -1,7 +1,8 @@
-import { form, query } from '$app/server';
+import { form, query, command } from '$app/server';
 import { db } from '$lib/server/db';
 import { todo } from '$lib/server/db/schema/todo';
 import { CreateTask } from '@/schemas/todo';
+import { eq, inArray } from 'drizzle-orm';
 
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
@@ -20,6 +21,151 @@ export const createTodo = form(async (data) => {
 	} else {
 		// Convert issues to human-readable format using flatten()
 		const flattenedErrors = v.flatten(validatedTodoData.issues);
+
+		console.error('Validation failed:', flattenedErrors);
+
+		// Use SvelteKit error with custom object structure
+		const nestedErrors: Record<string, string[]> = {};
+		if (flattenedErrors.nested) {
+			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
+				if (value) {
+					nestedErrors[key] = value;
+				}
+			}
+		}
+
+		return error(400, {
+			message: 'Validation failed',
+			errors: {
+				nested: nestedErrors
+			}
+		});
+	}
+});
+
+// Delete a single todo
+const deleteTodoSchema = v.object({
+	id: v.number('ID must be a number')
+});
+
+export const deleteTodo = command(deleteTodoSchema, async ({ id }) => {
+	const result = await db.delete(todo).where(eq(todo.id, id)).returning();
+
+	if (result.length === 0) {
+		error(404, 'Todo not found');
+	}
+
+	// Note: Query will be refreshed automatically when the component re-renders
+
+	return { success: true };
+});
+
+// Bulk update todos
+const bulkUpdateTodosSchema = v.object({
+	ids: v.array(v.number('ID must be a number')),
+	updates: v.object({
+		status: v.optional(
+			v.union([
+				v.literal('backlog'),
+				v.literal('todo'),
+				v.literal('in progress'),
+				v.literal('done'),
+				v.literal('canceled')
+			])
+		),
+		priority: v.optional(v.union([v.literal('low'), v.literal('medium'), v.literal('high')])),
+		label: v.optional(
+			v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')])
+		),
+		completed: v.optional(v.boolean())
+	})
+});
+
+export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, updates }) => {
+	if (ids.length === 0) {
+		error(400, 'No todo IDs provided');
+	}
+
+	// Filter out undefined values from updates
+	const filteredUpdates = Object.fromEntries(
+		Object.entries(updates).filter(([, value]) => value !== undefined)
+	);
+
+	if (Object.keys(filteredUpdates).length === 0) {
+		error(400, 'No valid updates provided');
+	}
+
+	const result = await db
+		.update(todo)
+		.set(filteredUpdates)
+		.where(inArray(todo.id, ids))
+		.returning();
+
+	if (result.length === 0) {
+		error(404, 'No todos found with the provided IDs');
+	}
+
+	// Note: Query will be refreshed automatically when the component re-renders
+
+	return { success: true, updatedCount: result.length };
+});
+
+// Bulk delete todos
+const bulkDeleteTodosSchema = v.object({
+	ids: v.array(v.number('ID must be a number'))
+});
+
+export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) => {
+	if (ids.length === 0) {
+		error(400, 'No todo IDs provided');
+	}
+
+	const result = await db.delete(todo).where(inArray(todo.id, ids)).returning();
+
+	if (result.length === 0) {
+		error(404, 'No todos found with the provided IDs');
+	}
+
+	// Note: Query will be refreshed automatically when the component re-renders
+
+	return { success: true, deletedCount: result.length };
+});
+
+// Update a single todo
+export const updateTodo = form(async (data) => {
+	const id = data.get('id');
+
+	// Validate ID
+	if (!id || typeof id !== 'string') {
+		return error(400, { message: 'Todo ID is required' });
+	}
+
+	const todoId = parseInt(id, 10);
+	if (isNaN(todoId)) {
+		return error(400, { message: 'Invalid todo ID' });
+	}
+
+	// Create update object from form data
+	const updateData = Object.fromEntries(data.entries());
+	delete updateData.id; // Remove ID from update data
+
+	const validatedUpdateData = v.safeParse(CreateTask, updateData);
+
+	if (validatedUpdateData.success) {
+		const result = await db
+			.update(todo)
+			.set(validatedUpdateData.output)
+			.where(eq(todo.id, todoId))
+			.returning();
+
+		if (result.length === 0) {
+			return error(404, { message: 'Todo not found' });
+		}
+
+		return { success: true };
+	} else {
+		// Convert issues to human-readable format using flatten()
+		const flattenedErrors = v.flatten(validatedUpdateData.issues);
 
 		console.error('Validation failed:', flattenedErrors);
 

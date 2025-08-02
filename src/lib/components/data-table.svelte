@@ -1,6 +1,11 @@
 <script lang="ts" module>
 	export const columns: ColumnDef<Schema>[] = [
 		{
+			id: "drag",
+			header: () => null,
+			cell: ({ row }) => renderSnippet(DragHandle, { id: row.original.id }),
+		},
+		{
 			id: "select",
 			header: ({ table }) =>
 				renderComponent(DataTableCheckbox, {
@@ -84,6 +89,24 @@
 		type VisibilityState,
 	} from "@tanstack/table-core";
 	import type { Schema } from "./schemas.js";
+	import {
+		useSensors,
+		MouseSensor,
+		TouchSensor,
+		KeyboardSensor,
+		useSensor,
+		type DragEndEvent,
+		type UniqueIdentifier,
+		DndContext,
+		closestCenter,
+	} from "@dnd-kit-svelte/core";
+	import {
+		arrayMove,
+		SortableContext,
+		useSortable,
+		verticalListSortingStrategy,
+	} from "@dnd-kit-svelte/sortable";
+	import { restrictToVerticalAxis } from "@dnd-kit-svelte/modifiers";
 	import { createSvelteTable } from "$lib/components/ui/data-table/data-table.svelte.js";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import * as Table from "$lib/components/ui/table/index.js";
@@ -98,22 +121,23 @@
 		renderComponent,
 		renderSnippet,
 	} from "$lib/components/ui/data-table/index.js";
-	import Columns3 from "@lucide/svelte/icons/columns-3";
-	import GripVertical from "@lucide/svelte/icons/grip-vertical";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Plus from "@lucide/svelte/icons/plus";
-	import ChevronsLeft from "@lucide/svelte/icons/chevrons-left";
-	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
-	import ChevronRight from "@lucide/svelte/icons/chevron-right";
-	import ChevronsRight from "@lucide/svelte/icons/chevrons-right";
-	import CheckCircle from "@lucide/svelte/icons/check-circle";
-	import Loader2 from "@lucide/svelte/icons/loader-2";
-	import EllipsisVertical from "@lucide/svelte/icons/ellipsis-vertical";
+	import LayoutColumnsIcon from "@tabler/icons-svelte/icons/layout-columns";
+	import GripVerticalIcon from "@tabler/icons-svelte/icons/grip-vertical";
+	import ChevronDownIcon from "@tabler/icons-svelte/icons/chevron-down";
+	import PlusIcon from "@tabler/icons-svelte/icons/plus";
+	import ChevronsLeftIcon from "@tabler/icons-svelte/icons/chevrons-left";
+	import ChevronLeftIcon from "@tabler/icons-svelte/icons/chevron-left";
+	import ChevronRightIcon from "@tabler/icons-svelte/icons/chevron-right";
+	import ChevronsRightIcon from "@tabler/icons-svelte/icons/chevrons-right";
+	import CircleCheckFilledIcon from "@tabler/icons-svelte/icons/circle-check-filled";
+	import LoaderIcon from "@tabler/icons-svelte/icons/loader";
+	import DotsVerticalIcon from "@tabler/icons-svelte/icons/dots-vertical";
 	import { toast } from "svelte-sonner";
 	import DataTableCheckbox from "./data-table-checkbox.svelte";
 	import DataTableCellViewer from "./data-table-cell-viewer.svelte";
 	import { createRawSnippet } from "svelte";
 	import DataTableReviewer from "./data-table-reviewer.svelte";
+	import { CSS } from "@dnd-kit-svelte/utilities";
 
 	let { data }: { data: Schema[] } = $props();
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
@@ -122,6 +146,15 @@
 	let rowSelection = $state<RowSelectionState>({});
 	let columnVisibility = $state<VisibilityState>({});
 
+	const sortableId = $props.id();
+
+	const sensors = useSensors(
+		useSensor(MouseSensor, {}),
+		useSensor(TouchSensor, {}),
+		useSensor(KeyboardSensor, {})
+	);
+
+	const dataIds: UniqueIdentifier[] = $derived(data.map((item) => item.id));
 
 	const table = createSvelteTable({
 		get data() {
@@ -190,6 +223,14 @@
 		},
 	});
 
+	function handleDragEnd(event: DragEndEvent) {
+		const { active, over } = event;
+		if (active && over && active.id !== over.id) {
+			const oldIndex = dataIds.indexOf(active.id);
+			const newIndex = dataIds.indexOf(over.id);
+			data = arrayMove(data, oldIndex, newIndex);
+		}
+	}
 
 	let views = [
 		{
@@ -248,10 +289,10 @@
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
 						<Button variant="outline" size="sm" {...props}>
-							<Columns3 />
+							<LayoutColumnsIcon />
 							<span class="hidden lg:inline">Customize Columns</span>
 							<span class="lg:hidden">Columns</span>
-							<ChevronDown />
+							<ChevronDownIcon />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
@@ -270,44 +311,54 @@
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 			<Button variant="outline" size="sm">
-				<Plus />
+				<PlusIcon />
 				<span class="hidden lg:inline">Add Section</span>
 			</Button>
 		</div>
 	</div>
 	<Tabs.Content value="outline" class="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
 		<div class="overflow-hidden rounded-lg border">
-			<Table.Root>
-				<Table.Header class="bg-muted sticky top-0 z-10">
-					{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-						<Table.Row>
-							{#each headerGroup.headers as header (header.id)}
-								<Table.Head colspan={header.colSpan}>
-									{#if !header.isPlaceholder}
-										<FlexRender
-											content={header.column.columnDef.header}
-											context={header.getContext()}
-										/>
-									{/if}
-								</Table.Head>
-							{/each}
-						</Table.Row>
-					{/each}
-				</Table.Header>
-				<Table.Body class="**:data-[slot=table-cell]:first:w-8">
-					{#if table.getRowModel().rows?.length}
-						{#each table.getRowModel().rows as row (row.id)}
-							{@render SimpleRow({ row })}
+			<DndContext
+				collisionDetection={closestCenter}
+				modifiers={[restrictToVerticalAxis]}
+				onDragEnd={handleDragEnd}
+				{sensors}
+				id={sortableId}
+			>
+				<Table.Root>
+					<Table.Header class="bg-muted sticky top-0 z-10">
+						{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+							<Table.Row>
+								{#each headerGroup.headers as header (header.id)}
+									<Table.Head colspan={header.colSpan}>
+										{#if !header.isPlaceholder}
+											<FlexRender
+												content={header.column.columnDef.header}
+												context={header.getContext()}
+											/>
+										{/if}
+									</Table.Head>
+								{/each}
+							</Table.Row>
 						{/each}
-					{:else}
-						<Table.Row>
-							<Table.Cell colspan={columns.length} class="h-24 text-center">
-								No results.
-							</Table.Cell>
-						</Table.Row>
-					{/if}
-				</Table.Body>
-			</Table.Root>
+					</Table.Header>
+					<Table.Body class="**:data-[slot=table-cell]:first:w-8">
+						{#if table.getRowModel().rows?.length}
+							<SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
+								{#each table.getRowModel().rows as row (row.id)}
+									{@render DraggableRow({ row })}
+								{/each}
+							</SortableContext>
+						{:else}
+							<Table.Row>
+								<Table.Cell colspan={columns.length} class="h-24 text-center">
+									No results.
+								</Table.Cell>
+							</Table.Row>
+						{/if}
+					</Table.Body>
+				</Table.Root>
+			</DndContext>
 		</div>
 		<div class="flex items-center justify-between px-4">
 			<div class="text-muted-foreground hidden flex-1 text-sm lg:flex">
@@ -348,7 +399,7 @@
 						disabled={!table.getCanPreviousPage()}
 					>
 						<span class="sr-only">Go to first page</span>
-						<ChevronsLeft />
+						<ChevronsLeftIcon />
 					</Button>
 					<Button
 						variant="outline"
@@ -358,7 +409,7 @@
 						disabled={!table.getCanPreviousPage()}
 					>
 						<span class="sr-only">Go to previous page</span>
-						<ChevronLeft />
+						<ChevronLeftIcon />
 					</Button>
 					<Button
 						variant="outline"
@@ -368,7 +419,7 @@
 						disabled={!table.getCanNextPage()}
 					>
 						<span class="sr-only">Go to next page</span>
-						<ChevronRight />
+						<ChevronRightIcon />
 					</Button>
 					<Button
 						variant="outline"
@@ -378,7 +429,7 @@
 						disabled={!table.getCanNextPage()}
 					>
 						<span class="sr-only">Go to last page</span>
-						<ChevronsRight />
+						<ChevronsRightIcon />
 					</Button>
 				</div>
 			</div>
@@ -446,9 +497,9 @@
 {#snippet DataTableStatus({ row }: { row: Row<Schema> })}
 	<Badge variant="outline" class="text-muted-foreground px-1.5">
 		{#if row.original.status === "Done"}
-			<CheckCircle class="fill-green-500 dark:fill-green-400" />
+			<CircleCheckFilledIcon class="fill-green-500 dark:fill-green-400" />
 		{:else}
-			<Loader2 />
+			<LoaderIcon />
 		{/if}
 		{row.original.status}
 	</Badge>
@@ -459,7 +510,7 @@
 		<DropdownMenu.Trigger class="data-[state=open]:bg-muted text-muted-foreground flex size-8">
 			{#snippet child({ props })}
 				<Button variant="ghost" size="icon" {...props}>
-					<EllipsisVertical />
+					<DotsVerticalIcon />
 					<span class="sr-only">Open menu</span>
 				</Button>
 			{/snippet}
@@ -474,9 +525,19 @@
 	</DropdownMenu.Root>
 {/snippet}
 
-{#snippet SimpleRow({ row }: { row: Row<Schema> })}
+{#snippet DraggableRow({ row }: { row: Row<Schema> })}
+	{@const { transform, transition, node, isDragging } = useSortable({
+		id: () => row.original.id,
+	})}
+
 	<Table.Row
 		data-state={row.getIsSelected() && "selected"}
+		data-dragging={isDragging.current}
+		bind:ref={node.current}
+		class="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+		style="transition: {transition.current}; transform: {CSS.Transform.toString(
+			transform.current
+		)}"
 	>
 		{#each row.getVisibleCells() as cell (cell.id)}
 			<Table.Cell>
@@ -486,3 +547,17 @@
 	</Table.Row>
 {/snippet}
 
+{#snippet DragHandle({ id }: { id: number })}
+	{@const { attributes, listeners } = useSortable({ id: () => id })}
+
+	<Button
+		{...attributes.current}
+		{...listeners.current}
+		variant="ghost"
+		size="icon"
+		class="text-muted-foreground size-7 hover:bg-transparent"
+	>
+		<GripVerticalIcon class="text-muted-foreground size-3" />
+		<span class="sr-only">Drag to reorder</span>
+	</Button>
+{/snippet}

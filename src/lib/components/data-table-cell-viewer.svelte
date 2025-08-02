@@ -1,5 +1,5 @@
 <script lang="ts">
-	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
+	import TrendingUpIcon from "@tabler/icons-svelte/icons/trending-up";
 	import { AreaChart } from "layerchart";
 	import { scaleUtc } from "d3-scale";
 	import { curveNatural } from "d3-shape";
