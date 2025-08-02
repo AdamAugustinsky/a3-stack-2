@@ -11,7 +11,7 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
-	import { signup } from './auth.remote';
+	import { signup } from '../auth.remote';
 	import { isHttpError } from '@sveltejs/kit';
 
 	let errorValue = $state<string | undefined>();
