@@ -9,4 +9,9 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children?.()}
+<div class="flex h-screen flex-col">
+	<!-- <HomeHeader /> -->
+	<main class="flex-1">
+		{@render children()}
+	</main>
+</div>

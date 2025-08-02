@@ -9,7 +9,8 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			'@/*': './src/lib/*'
+			'@/*': './src/lib/*',
+			'@routes': './src/routes/*'
 		},
 		experimental: {
 			remoteFunctions: true
