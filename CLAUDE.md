@@ -536,6 +536,41 @@ import * as Card from "$lib/components/ui/card/index.js";
 
 This project demonstrates modern full-stack development patterns with SvelteKit, showcasing experimental features and best practices for authentication, database management, and user interface development.
 
+## Design Principles
+
+These principles capture patterns and decisions we solidified while designing the Account page and should guide future UI work across the app.
+
+1) Text overflow and truncation
+- Always guard long user-provided strings (names, emails, IDs) with truncation and min-width containers.
+- Use a combination of: parent container with min-w-0, child text with truncate, and icons with shrink-0 to prevent layout jitter.
+- Apply whitespace-nowrap only to short helper labels to avoid wrapping, not to primary content.
+
+2) Spacing rhythm to avoid micro-scroll
+- Prefer small, consistent paddings across container → grid → card header/content → row paddings to avoid cumulative overflow.
+- Use tighter paddings where density is desired: pb-1 on headers, py-1 on list rows, and space-y-2/3 for compact sections.
+- Avoid bottom-most margin stacking that causes 2–8px accidental scroll.
+
+3) Responsive grid structure
+- Use a simple two-column grid for settings pages: main editor (2/3) and meta/actions (1/3).
+- Ensure mobile-first: stack to a single column, rely on min-w-0 and truncate to keep content readable.
+
+4) Inline feedback and micro-interactions
+- Show lightweight inline alerts for success/error (with icons) near the header of the page or above the edited section.
+- Use short-lived success messages (e.g., after copy) that auto-clear.
+- Keep the destructive section visually distinct and isolated.
+
+5) Skeletons and perceived performance
+- Optional skeletons are helpful; keep them minimal and consistent in size with final content to avoid layout shift.
+- Toggle them only for longer async operations.
+
+6) Controls and actions
+- Place primary context actions (e.g., Edit Profile) in predictable locations: page header or section header.
+- Prefer compact buttons for secondary actions in dense areas (e.g., Copy beside User ID).
+
+7) Simplicity and consistency
+- Favor minimal, obvious class changes over custom CSS whenever possible.
+- Avoid over-abstraction; prefer local, obvious helpers and straightforward composition.
+
 ## Code Preferences
 
 The following preferences guide how we write and maintain code in this repository, inferred from recent changes and aligned with our Simplicity philosophy:
