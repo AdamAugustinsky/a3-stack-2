@@ -140,8 +140,8 @@ For reading dynamic data from the server. Can accept typed arguments with automa
 
 ```typescript
 import { query } from '$app/server';
-import { type } from 'arktype';
 import { error } from '@sveltejs/kit';
+import * as v from 'valibot';
 
 // Simple query without arguments
 export const getPosts = query(async () => {
@@ -154,7 +154,6 @@ export const getPosts = query(async () => {
 });
 
 // With Valibot validation
-import * as v from 'valibot';
 
 const getPostSchema = v.object({
 	slug: v.pipe(v.string(), v.minLength(1))
