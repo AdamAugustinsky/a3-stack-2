@@ -1,22 +1,35 @@
 import { form, query, command } from '$app/server';
-import { db } from '$lib/server/db';
-import { todo } from '$lib/server/db/schema/todo';
+import { eden } from '$lib/server/eden';
 import { CreateTask } from '@/schemas/todo';
-import { eq, inArray } from 'drizzle-orm';
 
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 
 // Query functions
 export const getTodos = query(async () => {
-	return await db.select().from(todo);
+	const response = await eden.api.todo.get();
+	if (response.error) {
+		error(500, 'Failed to fetch todos');
+	}
+	return response.data;
 });
 
 export const createTodo = form(async (data) => {
 	const validatedTodoData = v.safeParse(CreateTask, Object.fromEntries(data.entries()));
 
 	if (validatedTodoData.success) {
-		await db.insert(todo).values(validatedTodoData.output);
+		const response = await eden.api.todo.post({
+			text: validatedTodoData.output.text,
+			completed: validatedTodoData.output.completed,
+			priority: validatedTodoData.output.priority,
+			status: validatedTodoData.output.status,
+			label: validatedTodoData.output.label
+		});
+
+		if (response.error) {
+			error(500, 'Failed to create todo');
+		}
+
 		return { success: true };
 	} else {
 		// Convert issues to human-readable format using flatten()
@@ -49,9 +62,9 @@ const deleteTodoSchema = v.object({
 });
 
 export const deleteTodo = command(deleteTodoSchema, async ({ id }) => {
-	const result = await db.delete(todo).where(eq(todo.id, id)).returning();
+	const response = await eden.api.todo({ id }).delete();
 
-	if (result.length === 0) {
+	if (response.error) {
 		error(404, 'Todo not found');
 	}
 
@@ -95,19 +108,18 @@ export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, upda
 		error(400, 'No valid updates provided');
 	}
 
-	const result = await db
-		.update(todo)
-		.set(filteredUpdates)
-		.where(inArray(todo.id, ids))
-		.returning();
+	const response = await eden.api.todo.bulk.patch({
+		ids,
+		updates: filteredUpdates
+	});
 
-	if (result.length === 0) {
+	if (response.error) {
 		error(404, 'No todos found with the provided IDs');
 	}
 
 	// Note: Query will be refreshed automatically when the component re-renders
 
-	return { success: true, updatedCount: result.length };
+	return { success: true, updatedCount: ids.length };
 });
 
 // Bulk delete todos
@@ -120,15 +132,17 @@ export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) =>
 		error(400, 'No todo IDs provided');
 	}
 
-	const result = await db.delete(todo).where(inArray(todo.id, ids)).returning();
+	const response = await eden.api.todo.bulk.delete({
+		ids
+	});
 
-	if (result.length === 0) {
+	if (response.error) {
 		error(404, 'No todos found with the provided IDs');
 	}
 
 	// Note: Query will be refreshed automatically when the component re-renders
 
-	return { success: true, deletedCount: result.length };
+	return { success: true, deletedCount: ids.length };
 });
 
 // Update a single todo
@@ -152,13 +166,14 @@ export const updateTodo = form(async (data) => {
 	const validatedUpdateData = v.safeParse(CreateTask, updateData);
 
 	if (validatedUpdateData.success) {
-		const result = await db
-			.update(todo)
-			.set(validatedUpdateData.output)
-			.where(eq(todo.id, todoId))
-			.returning();
+		const response = await eden.api.todo({ id: todoId }).patch({
+			text: validatedUpdateData.output.text,
+			label: validatedUpdateData.output.label,
+			status: validatedUpdateData.output.status,
+			priority: validatedUpdateData.output.priority
+		});
 
-		if (result.length === 0) {
+		if (response.error) {
 			return error(404, { message: 'Todo not found' });
 		}
 
