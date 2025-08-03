@@ -158,9 +158,9 @@
 				<!-- Skeletons when loading -->
 				{#if isLoading && showSkeleton}
 					<div class="grid gap-4">
-						<div class="h-5 w-24 animate-pulse rounded bg-muted" />
-						<div class="h-10 w-full animate-pulse rounded bg-muted" />
-						<div class="h-5 w-48 animate-pulse rounded bg-muted" />
+						<div class="h-5 w-24 animate-pulse rounded bg-muted"></div>
+						<div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+						<div class="h-5 w-48 animate-pulse rounded bg-muted"></div>
 					</div>
 				{:else}
 					<div class="grid gap-4">
