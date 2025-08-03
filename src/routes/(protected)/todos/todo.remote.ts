@@ -145,42 +145,23 @@ export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) =>
 	return { success: true, deletedCount: ids.length };
 });
 
+// Update todo schema
+const updateTodoSchema = v.object({
+	id: v.pipe(
+		v.string(),
+		v.transform((val) => parseInt(val, 10)),
+		v.number()
+	),
+	...CreateTask.entries
+});
+
 // Update a single todo
 export const updateTodo = form(async (data) => {
-	const id = data.get('id');
+	const validatedData = v.safeParse(updateTodoSchema, Object.fromEntries(data.entries()));
 
-	// Validate ID
-	if (!id || typeof id !== 'string') {
-		return error(400, { message: 'Todo ID is required' });
-	}
-
-	const todoId = parseInt(id, 10);
-	if (isNaN(todoId)) {
-		return error(400, { message: 'Invalid todo ID' });
-	}
-
-	// Create update object from form data
-	const updateData = Object.fromEntries(data.entries());
-	delete updateData.id; // Remove ID from update data
-
-	const validatedUpdateData = v.safeParse(CreateTask, updateData);
-
-	if (validatedUpdateData.success) {
-		const response = await eden.api.todo({ id: todoId }).patch({
-			text: validatedUpdateData.output.text,
-			label: validatedUpdateData.output.label,
-			status: validatedUpdateData.output.status,
-			priority: validatedUpdateData.output.priority
-		});
-
-		if (response.error) {
-			return error(404, { message: 'Todo not found' });
-		}
-
-		return { success: true };
-	} else {
+	if (!validatedData.success) {
 		// Convert issues to human-readable format using flatten()
-		const flattenedErrors = v.flatten(validatedUpdateData.issues);
+		const flattenedErrors = v.flatten(validatedData.issues);
 
 		console.error('Validation failed:', flattenedErrors);
 
@@ -201,4 +182,19 @@ export const updateTodo = form(async (data) => {
 			}
 		});
 	}
+
+	const { id: todoId, ...updateData } = validatedData.output;
+
+	const response = await eden.api.todo({ id: todoId }).patch({
+		text: updateData.text,
+		label: updateData.label,
+		status: updateData.status,
+		priority: updateData.priority
+	});
+
+	if (response.error) {
+		return error(404, { message: 'Todo not found' });
+	}
+
+	return { success: true };
 });

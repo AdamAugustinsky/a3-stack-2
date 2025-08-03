@@ -2,19 +2,48 @@ import { form, command } from '$app/server';
 import { auth } from '@/server/auth';
 import { error, redirect } from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
+import * as v from 'valibot';
+
+// Validation schemas
+const signinSchema = v.object({
+	email: v.pipe(v.string(), v.email(), v.minLength(1)),
+	password: v.pipe(v.string(), v.minLength(1))
+});
+
+const signupSchema = v.object({
+	email: v.pipe(v.string(), v.email(), v.minLength(1)),
+	password: v.pipe(v.string(), v.minLength(8)),
+	name: v.pipe(v.string(), v.minLength(1), v.maxLength(100))
+});
 
 export const signin = form(async (data) => {
-	const email = data.get('email');
-	const password = data.get('password');
+	const validatedData = v.safeParse(signinSchema, Object.fromEntries(data.entries()));
 
-	// Validate inputs
-	if (typeof email !== 'string' || typeof password !== 'string') {
-		error(400, 'Email and password are required');
+	if (!validatedData.success) {
+		// Convert issues to human-readable format using flatten()
+		const flattenedErrors = v.flatten(validatedData.issues);
+
+		console.error('Validation failed:', flattenedErrors);
+
+		// Use SvelteKit error with custom object structure
+		const nestedErrors: Record<string, string[]> = {};
+		if (flattenedErrors.nested) {
+			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
+				if (value) {
+					nestedErrors[key] = value;
+				}
+			}
+		}
+
+		return error(400, {
+			message: 'Validation failed',
+			errors: {
+				nested: nestedErrors
+			}
+		});
 	}
 
-	if (!email || !password) {
-		error(400, 'Email and password are required');
-	}
+	const { email, password } = validatedData.output;
 
 	const response = await auth.api.signInEmail({
 		body: {
@@ -44,23 +73,33 @@ export const signin = form(async (data) => {
 });
 
 export const signup = form(async (data) => {
-	const email = data.get('email');
-	const password = data.get('password');
-	const name = data.get('name');
+	const validatedData = v.safeParse(signupSchema, Object.fromEntries(data.entries()));
 
-	// Validate inputs
-	if (typeof email !== 'string' || typeof password !== 'string' || typeof name !== 'string') {
-		error(400, 'Name, email and password are required');
+	if (!validatedData.success) {
+		// Convert issues to human-readable format using flatten()
+		const flattenedErrors = v.flatten(validatedData.issues);
+
+		console.error('Validation failed:', flattenedErrors);
+
+		// Use SvelteKit error with custom object structure
+		const nestedErrors: Record<string, string[]> = {};
+		if (flattenedErrors.nested) {
+			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
+				if (value) {
+					nestedErrors[key] = value;
+				}
+			}
+		}
+
+		return error(400, {
+			message: 'Validation failed',
+			errors: {
+				nested: nestedErrors
+			}
+		});
 	}
 
-	if (!email || !password || !name) {
-		error(400, 'Name, email and password are required');
-	}
-
-	// Validate password length
-	if (password.length < 8) {
-		error(400, 'Password must be at least 8 characters');
-	}
+	const { email, password, name } = validatedData.output;
 
 	const response = await auth.api.signUpEmail({
 		body: {
