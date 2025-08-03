@@ -34,7 +34,7 @@
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton tooltipContent={item.title}>
 						{#snippet child({ props })}
-							<a href={item.url} class="flex items-center gap-2" {...props}>
+							<a href={item.url} {...props}>
 								{#if item.icon}
 									<item.icon />
 								{/if}

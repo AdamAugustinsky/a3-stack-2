@@ -108,21 +108,21 @@ import { form } from '$app/server';
 import { error, redirect } from '@sveltejs/kit';
 
 export const createPost = form(async (data) => {
- const title = data.get('title');
- const content = data.get('content');
+	const title = data.get('title');
+	const content = data.get('content');
 
- // Manual validation required
- if (typeof title !== 'string' || typeof content !== 'string') {
-  error(400, 'Title and content are required');
- }
+	// Manual validation required
+	if (typeof title !== 'string' || typeof content !== 'string') {
+		error(400, 'Title and content are required');
+	}
 
- // Database operation
- await db.sql`
+	// Database operation
+	await db.sql`
     INSERT INTO post (slug, title, content)
     VALUES (${slug}, ${title}, ${content})
   `;
 
- redirect(303, `/blog/${slug}`);
+	redirect(303, `/blog/${slug}`);
 });
 ```
 
@@ -130,12 +130,12 @@ Usage in component:
 
 ```svelte
 <form
- {...createPost.enhance(async ({ submit }) => {
-  // Handle loading/errors
- })}
+	{...createPost.enhance(async ({ submit }) => {
+		// Handle loading/errors
+	})}
 >
- <input name="title" />
- <textarea name="content"></textarea>
+	<input name="title" />
+	<textarea name="content"></textarea>
 </form>
 ```
 
@@ -150,64 +150,61 @@ import { error } from '@sveltejs/kit';
 
 // Simple query without arguments
 export const getPosts = query(async () => {
- const posts = await db.sql`
+	const posts = await db.sql`
     SELECT title, slug, published_at
     FROM post
     ORDER BY published_at DESC
   `;
- return posts;
+	return posts;
 });
 
 // With Valibot validation
 import * as v from 'valibot';
 
 const getPostSchema = v.object({
- slug: v.pipe(v.string(), v.minLength(1))
+	slug: v.pipe(v.string(), v.minLength(1))
 });
 
 export const getPost = query(getPostSchema, async ({ slug }) => {
- const post = await db.getPost(slug);
- if (!post) error(404, 'Post not found');
- return post;
+	const post = await db.getPost(slug);
+	if (!post) error(404, 'Post not found');
+	return post;
 });
 
 // More complex validation with Valibot
 const searchPostsSchema = v.object({
- query: v.pipe(v.string(), v.minLength(1)),
- limit: v.pipe(v.number(), v.minValue(1), v.maxValue(100)),
- offset: v.pipe(v.number(), v.minValue(0)),
- category: v.optional(v.string())
+	query: v.pipe(v.string(), v.minLength(1)),
+	limit: v.pipe(v.number(), v.minValue(1), v.maxValue(100)),
+	offset: v.pipe(v.number(), v.minValue(0)),
+	category: v.optional(v.string())
 });
 
 export const searchPosts = query(searchPostsSchema, async ({ query, limit, offset, category }) => {
- // Input is automatically validated and typed
- return await db.searchPosts({ query, limit, offset, category });
+	// Input is automatically validated and typed
+	return await db.searchPosts({ query, limit, offset, category });
 });
 ```
 
 Usage in component:
 
 ```svelte
-<script>
- import { getPosts, getPost, searchPosts } from './data.remote';
+<script lang="ts">
+	import { getPosts } from './data.remote';
 
- // With arguments
- const posts = await searchPosts({
-  query: 'svelte',
-  limit: 10,
-  offset: 0
- });
+	const query = getPosts();
 </script>
 
-{#await getPosts()}
- <p>Loading...</p>
-{:then posts}
- {#each posts as post}
-  <article>{post.title}</article>
- {/each}
-{:catch error}
- <p>Error: {error.message}</p>
-{/await}
+{#if query.error}
+	<p>oops!</p>
+{:else if query.loading}
+	<p>loading...</p>
+{:else}
+	<ul>
+		{#each query.current as { title, slug }}
+			<li><a href="/blog/{slug}">{title}</a></li>
+		{/each}
+	</ul>
+{/if}
 ```
 
 #### 3. Command Functions
@@ -222,47 +219,47 @@ import { error } from '@sveltejs/kit';
 
 // Simple command with Valibot validation
 const likeSchema = v.object({
- postId: v.pipe(v.string(), v.minLength(1))
+	postId: v.pipe(v.string(), v.minLength(1))
 });
 
 export const incrementLikes = command(likeSchema, async ({ postId }) => {
- const result = await db.sql`
+	const result = await db.sql`
       UPDATE post
       SET likes = likes + 1
       WHERE id = ${postId}
       RETURNING likes
     `;
 
- if (!result.length) {
-  error(404, 'Post not found');
- }
+	if (!result.length) {
+		error(404, 'Post not found');
+	}
 
- // Optionally refresh related queries
- getPosts.refresh();
+	// Optionally refresh related queries
+	getPosts.refresh();
 
- return { likes: result[0].likes };
+	return { likes: result[0].likes };
 });
 
 // More complex example with nested validation
 const updateProfileSchema = v.object({
- userId: v.pipe(v.string(), v.minLength(1)),
- profile: v.object({
-  name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
-  bio: v.optional(v.pipe(v.string(), v.maxLength(500))),
-  email: v.pipe(v.string(), v.email()),
-  age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120)))
- })
+	userId: v.pipe(v.string(), v.minLength(1)),
+	profile: v.object({
+		name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
+		bio: v.optional(v.pipe(v.string(), v.maxLength(500))),
+		email: v.pipe(v.string(), v.email()),
+		age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120)))
+	})
 });
 
 export const updateProfile = command(updateProfileSchema, async ({ userId, profile }) => {
- // Input is automatically validated and typed
- const user = await auth.getUser(userId);
- if (!user) error(404, 'User not found');
+	// Input is automatically validated and typed
+	const user = await auth.getUser(userId);
+	if (!user) error(404, 'User not found');
 
- await db.updateUser(userId, profile);
+	await db.updateUser(userId, profile);
 
- // Refresh user queries
- getUser.refresh({ userId });
+	// Refresh user queries
+	getUser.refresh({ userId });
 });
 ```
 
@@ -270,37 +267,37 @@ Usage in component:
 
 ```svelte
 <script>
- import { incrementLikes, updateProfile } from './data.remote';
+	import { incrementLikes, updateProfile } from './data.remote';
 
- async function handleLike(postId: string) {
-  try {
-   const result = await incrementLikes({ postId });
-   console.log('New like count:', result.likes);
-  } catch (error) {
-   console.error('Failed to like post:', error);
-  }
- }
+	async function handleLike(postId: string) {
+		try {
+			const result = await incrementLikes({ postId });
+			console.log('New like count:', result.likes);
+		} catch (error) {
+			console.error('Failed to like post:', error);
+		}
+	}
 
- async function saveProfile() {
-  try {
-   await updateProfile({
-    userId: currentUser.id,
-    profile: {
-     name: userName,
-     email: userEmail,
-     bio: userBio,
-     age: userAge
-    }
-   });
-  } catch (error) {
-   // Validation errors are automatically handled
-   console.error('Profile update failed:', error);
-  }
- }
+	async function saveProfile() {
+		try {
+			await updateProfile({
+				userId: currentUser.id,
+				profile: {
+					name: userName,
+					email: userEmail,
+					bio: userBio,
+					age: userAge
+				}
+			});
+		} catch (error) {
+			// Validation errors are automatically handled
+			console.error('Profile update failed:', error);
+		}
+	}
 </script>
 
 <button onclick={() => handleLike(post.id)}>
- Like ({post.likes})
+	Like ({post.likes})
 </button>
 ```
 
@@ -312,18 +309,18 @@ For generating static data at build time.
 import { prerender } from '$app/server';
 
 export const getStaticPosts = prerender(
- async () => {
-  const posts = await db.sql`
+	async () => {
+		const posts = await db.sql`
     SELECT title, slug
     FROM post
     WHERE published = true
   `;
-  return posts;
- },
- {
-  // Specify which pages to prerender
-  inputs: () => [{ slug: 'first-post' }, { slug: 'second-post' }]
- }
+		return posts;
+	},
+	{
+		// Specify which pages to prerender
+		inputs: () => [{ slug: 'first-post' }, { slug: 'second-post' }]
+	}
 );
 ```
 
@@ -349,33 +346,33 @@ This project currently uses form functions for authentication (`src/routes/auth.
 
 ```svelte
 <script>
- import { signin } from '../auth.remote';
- import { isHttpError } from '@sveltejs/kit';
+	import { signin } from '../auth.remote';
+	import { isHttpError } from '@sveltejs/kit';
 
- let errorValue = $state<string | undefined>();
- let loading = $state(false);
+	let errorValue = $state<string | undefined>();
+	let loading = $state(false);
 </script>
 
 <form
- {...signin.enhance(async ({ submit }) => {
-  errorValue = undefined;
-  loading = true;
+	{...signin.enhance(async ({ submit }) => {
+		errorValue = undefined;
+		loading = true;
 
-  try {
-   await submit();
-   // Success - redirects handled automatically
-  } catch (error) {
-   if (isHttpError(error)) {
-    errorValue = error.body.message;
-   } else {
-    errorValue = 'An unexpected error occurred';
-   }
-  } finally {
-   loading = false;
-  }
- })}
+		try {
+			await submit();
+			// Success - redirects handled automatically
+		} catch (error) {
+			if (isHttpError(error)) {
+				errorValue = error.body.message;
+			} else {
+				errorValue = 'An unexpected error occurred';
+			}
+		} finally {
+			loading = false;
+		}
+	})}
 >
- <!-- form fields with disabled={loading} -->
+	<!-- form fields with disabled={loading} -->
 </form>
 ```
 
@@ -393,31 +390,27 @@ const ageSchema = v.pipe(v.number(), v.minValue(13), v.maxValue(120));
 
 // Complex object validation
 const userSchema = v.object({
- name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
- email: v.pipe(v.string(), v.email()),
- password: v.pipe(v.string(), v.minLength(8)),
- age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120))),
- tags: v.pipe(v.array(v.string()), v.maxLength(10)) // Array with max 10 items
+	name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
+	email: v.pipe(v.string(), v.email()),
+	password: v.pipe(v.string(), v.minLength(8)),
+	age: v.optional(v.pipe(v.number(), v.minValue(13), v.maxValue(120))),
+	tags: v.pipe(v.array(v.string()), v.maxLength(10)) // Array with max 10 items
 });
 
 // Union types
-const statusSchema = v.union([
- v.literal('active'),
- v.literal('inactive'),
- v.literal('pending')
-]);
+const statusSchema = v.union([v.literal('active'), v.literal('inactive'), v.literal('pending')]);
 
 // Nested objects
 const postSchema = v.object({
- title: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
- content: v.pipe(v.string(), v.minLength(1)),
- author: v.object({
-  id: v.pipe(v.string(), v.minLength(1)),
-  name: v.string()
- }),
- tags: v.array(v.string()),
- published: v.boolean(),
- publishedAt: v.optional(v.date())
+	title: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
+	content: v.pipe(v.string(), v.minLength(1)),
+	author: v.object({
+		id: v.pipe(v.string(), v.minLength(1)),
+		name: v.string()
+	}),
+	tags: v.array(v.string()),
+	published: v.boolean(),
+	publishedAt: v.optional(v.date())
 });
 ```
 
@@ -425,11 +418,11 @@ const postSchema = v.object({
 
 ```typescript
 export const createPost = form(async (data) => {
- // Manual validation required for form functions
- const title = data.get('title');
- if (typeof title !== 'string' || !title) {
-  error(400, 'Title is required');
- }
+	// Manual validation required for form functions
+	const title = data.get('title');
+	if (typeof title !== 'string' || !title) {
+		error(400, 'Title is required');
+	}
 });
 ```
 
@@ -634,4 +627,3 @@ The application will be available at `http://localhost:5173` with full authentic
 - **Mobile-first**: Responsive design from the ground up
 
 This project demonstrates modern full-stack development patterns with SvelteKit, showcasing experimental features and best practices for authentication, database management, and user interface development.
-

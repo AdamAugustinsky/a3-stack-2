@@ -13,4 +13,3 @@ export const signinSchema = type({
 
 export type SignupSchema = typeof signupSchema.infer;
 export type SigninSchema = typeof signinSchema.infer;
-

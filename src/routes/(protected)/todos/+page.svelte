@@ -127,22 +127,10 @@
 	}
 </script>
 
-<!-- <div class="md:hidden"> -->
-<!--   <img -->
-<!--     src="/img/examples/tasks-light.png" -->
-<!--     alt="Tasks" -->
-<!--     class="block dark:hidden" -->
-<!--   /> -->
-<!--   <img -->
-<!--     src="/img/examples/tasks-dark.png" -->
-<!--     alt="Tasks" -->
-<!--     class="hidden dark:block" -->
-<!--   /> -->
-<!-- </div> -->
 <div class="hidden h-full flex-1 flex-col gap-8 p-8 md:flex">
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex flex-col gap-1">
-			<h2 class="text-2xl font-semibold tracking-tight">Welcome back!</h2>
+			<h2 class="text-2xl font-semibold tracking-tight">Todos!</h2>
 			<p class="text-muted-foreground">Here&apos;s a list of your tasks for this month.</p>
 		</div>
 		<Button onclick={handleOpenCreateDialog}>

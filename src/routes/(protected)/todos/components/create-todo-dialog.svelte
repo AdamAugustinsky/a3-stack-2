@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { labels, statuses, priorities } from './data.js';
@@ -11,6 +10,7 @@
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { isValidationError, extractFieldErrors } from '$lib/utils/validation-errors.js';
+	import Input from '@/components/ui/input/input.svelte';
 
 	let {
 		open = $bindable()
@@ -77,13 +77,7 @@
 			{/if}
 			<div>
 				<Label for="task-title">Task Title <span class="text-destructive">*</span></Label>
-				<Textarea
-					id="task-title"
-					placeholder="What needs to be done?"
-					rows={2}
-					class="resize-none {fieldErrors.text ? 'border-destructive' : ''}"
-					name="text"
-				/>
+				<Input id="task-title" placeholder="What needs to be done?" name="text" />
 				{#if fieldErrors.text}
 					<p class="mt-1 text-sm text-destructive">{fieldErrors.text}</p>
 				{:else}
