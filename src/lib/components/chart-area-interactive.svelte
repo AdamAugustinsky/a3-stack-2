@@ -8,36 +8,37 @@
 	import { curveNatural } from 'd3-shape';
 	import { getRecentActivity } from '@routes/(protected)/dashboard/dashboard.remote';
 
+	type RangeKey = '30d' | '14d' | '7d';
+
 	const activityQuery = getRecentActivity();
 
-	let timeRange = $state('30d');
+	let timeRange = $state<RangeKey>('30d');
 
-	const selectedLabel = $derived.by(() => {
-		switch (timeRange) {
-			case '30d':
-				return 'Last 30 days';
-			case '14d':
-				return 'Last 14 days';
-			case '7d':
-				return 'Last 7 days';
-			default:
-				return 'Last 30 days';
-		}
-	});
+	const LABEL: Record<RangeKey, string> = {
+		'30d': 'Last 30 days',
+		'14d': 'Last 14 days',
+		'7d': 'Last 7 days'
+	};
+
+	const RANGE_TO_DAYS: Record<RangeKey, number> = {
+		'30d': 30,
+		'14d': 14,
+		'7d': 7
+	};
+
+	const selectedLabel = $derived.by(() => LABEL[timeRange]);
 
 	const filteredData = $derived.by(() => {
-		if (activityQuery.loading || activityQuery.error || !activityQuery.current) {
-			return [];
-		}
+		if (activityQuery.loading || activityQuery.error || !activityQuery.current) return [];
+		const daysToShow = RANGE_TO_DAYS[timeRange];
 
-		let daysToShow = 30;
-		if (timeRange === '14d') {
-			daysToShow = 14;
-		} else if (timeRange === '7d') {
-			daysToShow = 7;
-		}
-
-		return activityQuery.current.slice(-daysToShow);
+		// Normalize data defensively to avoid NaNs and ensure Date instances
+		return activityQuery.current.slice(-daysToShow).map((d) => ({
+			date: d.date instanceof Date ? d.date : new Date(d.date),
+			completed: +d.completed || 0,
+			inProgress: +d.inProgress || 0,
+			total: +d.total || 0
+		}));
 	});
 
 	const chartConfig = {
