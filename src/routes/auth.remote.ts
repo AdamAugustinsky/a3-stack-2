@@ -1,6 +1,7 @@
-import { form } from '$app/server';
+import { form, command } from '$app/server';
 import { auth } from '@/server/auth';
 import { error, redirect } from '@sveltejs/kit';
+import { getRequestEvent } from '$app/server';
 
 export const signin = form(async (data) => {
 	const email = data.get('email');
@@ -26,7 +27,7 @@ export const signin = form(async (data) => {
 
 	switch (response.status) {
 		case 200:
-			return redirect(303, '/');
+			return redirect(303, '/dashboard');
 		case 401:
 			return error(401, 'Invalid email or password');
 		case 404:
@@ -83,4 +84,17 @@ export const signup = form(async (data) => {
 		default:
 			return error(400, 'Failed to create account');
 	}
+});
+
+export const logout = command(async () => {
+	const event = getRequestEvent();
+	if (!event) {
+		error(500, 'Request context not available');
+	}
+
+	await auth.api.signOut({
+		headers: event.request.headers
+	});
+
+	return { success: true };
 });

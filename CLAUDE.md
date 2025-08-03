@@ -69,9 +69,9 @@ src/
 │   └── utils.ts             # Utility functions
 ├── routes/
 │   ├── auth.remote.ts       # Remote functions for auth
-│   ├── signin/
+│   ├── sign-in/
 │   │   └── +page.svelte     # Sign in page
-│   └── signup/
+│   └── sign-up/
 │       └── +page.svelte     # Sign up page
 └── hooks.server.ts          # Server-side hooks
 ```

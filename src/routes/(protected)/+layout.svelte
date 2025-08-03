@@ -3,8 +3,9 @@
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
 	import type { LayoutData } from './$types';
+	import type { Snippet } from 'svelte';
 
-	const { children, data }: { children: any; data: LayoutData } = $props();
+	const { children, data }: { children: Snippet; data: LayoutData } = $props();
 </script>
 
 <Sidebar.Provider

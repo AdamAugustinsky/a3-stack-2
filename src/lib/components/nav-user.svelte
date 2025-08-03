@@ -7,6 +7,8 @@
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { logout } from '../../routes/auth.remote';
+	import { goto } from '$app/navigation';
 
 	import type { User } from 'better-auth';
 
@@ -21,6 +23,15 @@
 		.join('')
 		.toUpperCase()
 		.slice(0, 2);
+
+	async function handleLogout() {
+		try {
+			await logout();
+			goto('/sign-in');
+		} catch (error) {
+			console.error('Logout failed:', error);
+		}
+	}
 </script>
 
 <Sidebar.Menu>
@@ -83,7 +94,7 @@
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item>
+				<DropdownMenu.Item onclick={handleLogout}>
 					<LogoutIcon />
 					Log out
 				</DropdownMenu.Item>
