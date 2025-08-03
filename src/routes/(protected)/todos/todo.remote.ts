@@ -1,6 +1,6 @@
 import { form, query, command } from '$app/server';
 import { eden } from '$lib/server/eden';
-import { CreateTask } from '@/schemas/todo';
+import { CreateTask } from '$lib/schemas/todo';
 
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';

@@ -24,9 +24,11 @@ export const Task = v.object({
 	priority: v.union(
 		[v.literal('low'), v.literal('medium'), v.literal('high')],
 		'Please select a valid priority: low, medium, or high'
-	)
+	),
+	createdAt: v.date('Created date must be a valid date'),
+	updatedAt: v.date('Updated date must be a valid date')
 });
 
-export const CreateTask = v.omit(Task, ['id']);
+export const CreateTask = v.omit(Task, ['id', 'createdAt', 'updatedAt']);
 
 export type Task = v.InferOutput<typeof Task>;

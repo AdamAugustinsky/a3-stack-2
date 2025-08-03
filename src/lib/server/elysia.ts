@@ -1,4 +1,4 @@
-import { eq, inArray, count, and } from 'drizzle-orm';
+import { eq, inArray, count, and, gte } from 'drizzle-orm';
 import { Elysia, t } from 'elysia';
 import { db } from './db';
 import { todo } from './db/schema/todo';
@@ -19,12 +19,15 @@ export const app = new Elysia({ prefix: '/api' })
 			.post(
 				'/',
 				async ({ body }) => {
+					const now = new Date();
 					const todoData = {
 						text: body.text,
 						completed: body.completed ?? false,
 						priority: body.priority ?? 'medium',
 						status: body.status ?? 'todo',
-						label: body.label ?? 'feature'
+						label: body.label ?? 'feature',
+						createdAt: now,
+						updatedAt: now
 					};
 					return await db.insert(todo).values(todoData);
 				},
@@ -56,7 +59,10 @@ export const app = new Elysia({ prefix: '/api' })
 				async ({ body }) => {
 					return await db
 						.update(todo)
-						.set({ completed: body.completed })
+						.set({
+							completed: body.completed,
+							updatedAt: new Date()
+						})
 						.where(eq(todo.id, body.id));
 				},
 				{
@@ -72,7 +78,10 @@ export const app = new Elysia({ prefix: '/api' })
 				async ({ params: { id }, body }) => {
 					return await db
 						.update(todo)
-						.set(body)
+						.set({
+							...body,
+							updatedAt: new Date()
+						})
 						.where(eq(todo.id, Number(id)));
 				},
 				{
@@ -99,7 +108,13 @@ export const app = new Elysia({ prefix: '/api' })
 				'/bulk',
 				async ({ body }) => {
 					const { ids, updates } = body;
-					return await db.update(todo).set(updates).where(inArray(todo.id, ids));
+					return await db
+						.update(todo)
+						.set({
+							...updates,
+							updatedAt: new Date()
+						})
+						.where(inArray(todo.id, ids));
 				},
 				{
 					body: t.Object({
@@ -224,40 +239,79 @@ export const app = new Elysia({ prefix: '/api' })
 			})
 
 			.get('/activity', async () => {
-				// Since we don't have creation dates in the schema, we'll simulate some activity data
-				// In a real app, you'd have created_at, updated_at timestamps
+				// Get actual activity data based on creation and update timestamps
+				const thirtyDaysAgo = new Date();
+				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-				// For now, let's return the current status distribution for chart purposes
-				const statusDistribution = await db
+				// Get todos created in the last 30 days grouped by date
+				const createdActivity = await db
 					.select({
+						date: todo.createdAt,
 						status: todo.status,
 						count: count()
 					})
 					.from(todo)
-					.groupBy(todo.status);
+					.where(gte(todo.createdAt, thirtyDaysAgo))
+					.groupBy(todo.createdAt, todo.status)
+					.orderBy(todo.createdAt);
 
-				// Generate some mock time-series data based on current todos
-				// In a real scenario, this would be based on actual creation/completion timestamps
-				const totalTodos = statusDistribution.reduce((sum, item) => sum + item.count, 0);
+				// Get todos updated in the last 30 days
+				const updatedActivity = await db
+					.select({
+						date: todo.updatedAt,
+						status: todo.status,
+						count: count()
+					})
+					.from(todo)
+					.where(gte(todo.updatedAt, thirtyDaysAgo))
+					.groupBy(todo.updatedAt, todo.status)
+					.orderBy(todo.updatedAt);
 
-				// Generate 30 days of mock data
-				const mockData = Array.from({ length: 30 }, (_, i) => {
-					const date = new Date();
-					date.setDate(date.getDate() - (29 - i));
+				// Group by day and aggregate counts
+				const activityMap = new Map();
 
-					// Simulate gradual increase in todos over time
-					const dayProgress = i / 29;
-					const completed = Math.floor(totalTodos * dayProgress * 0.6); // 60% completion rate
-					const inProgress = Math.floor(totalTodos * dayProgress * 0.3); // 30% in progress
-
-					return {
-						date,
-						completed,
-						inProgress,
-						total: completed + inProgress
-					};
+				// Process created todos
+				createdActivity.forEach((item) => {
+					const dateKey = item.date.toISOString().split('T')[0];
+					if (!activityMap.has(dateKey)) {
+						activityMap.set(dateKey, {
+							date: item.date,
+							created: 0,
+							completed: 0,
+							inProgress: 0,
+							total: 0
+						});
+					}
+					const dayData = activityMap.get(dateKey);
+					dayData.created += item.count;
+					dayData.total += item.count;
 				});
 
-				return mockData;
+				// Process status changes (approximate completion/progress from updates)
+				updatedActivity.forEach((item) => {
+					const dateKey = item.date.toISOString().split('T')[0];
+					if (!activityMap.has(dateKey)) {
+						activityMap.set(dateKey, {
+							date: item.date,
+							created: 0,
+							completed: 0,
+							inProgress: 0,
+							total: 0
+						});
+					}
+					const dayData = activityMap.get(dateKey);
+					if (item.status === 'done') {
+						dayData.completed += item.count;
+					} else if (item.status === 'in progress') {
+						dayData.inProgress += item.count;
+					}
+				});
+
+				// Convert map to array and sort by date
+				const activityData = Array.from(activityMap.values()).sort(
+					(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+				);
+
+				return activityData;
 			})
 	);

@@ -15,6 +15,13 @@
       "when": 1754169213095,
       "tag": "0001_daily_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754240325185,
+      "tag": "0002_normal_solo",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, serial } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, serial, timestamp } from 'drizzle-orm/pg-core';
 
 export const todo = pgTable('todo', {
 	id: serial('id').primaryKey(),
@@ -8,5 +8,7 @@ export const todo = pgTable('todo', {
 	status: text('status')
 		.notNull()
 		.$type<'backlog' | 'todo' | 'in progress' | 'done' | 'canceled'>(),
-	priority: text('priority').notNull().$type<'low' | 'medium' | 'high'>()
+	priority: text('priority').notNull().$type<'low' | 'medium' | 'high'>(),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+	updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
