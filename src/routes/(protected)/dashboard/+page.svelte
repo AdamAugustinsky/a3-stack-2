@@ -1,8 +1,7 @@
 <script lang="ts">
-	import data from './data.js';
 	import SectionCards from '$lib/components/section-cards.svelte';
 	import ChartAreaInteractive from '$lib/components/chart-area-interactive.svelte';
-	import DataTable from '$lib/components/data-table.svelte';
+	import DashboardTodoTable from '$lib/components/dashboard-todo-table.svelte';
 </script>
 
 <div class="flex flex-1 flex-col">
@@ -12,7 +11,9 @@
 			<div class="px-4 lg:px-6">
 				<ChartAreaInteractive />
 			</div>
-			<DataTable {data} />
+			<div class="px-4 lg:px-6">
+				<DashboardTodoTable />
+			</div>
 		</div>
 	</div>
 </div>

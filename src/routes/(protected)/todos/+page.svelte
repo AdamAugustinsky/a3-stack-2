@@ -16,7 +16,7 @@
 	let isBulkOperationPending = $state(false);
 
 	// Use the todos from remote query function
-	const todosPromise = getTodos();
+	const todosQuery = getTodos();
 
 	function handleOpenCreateDialog() {
 		showCreateDialog = true;
@@ -138,30 +138,28 @@
 			Add Task
 		</Button>
 	</div>
-	{#await todosPromise}
+	{#if todosQuery.loading}
 		<div class="py-8 text-center">
 			<p class="text-muted-foreground">Loading tasks...</p>
 		</div>
-	{:then todos}
-		{#if todos.length > 0}
-			<TodoDataTable
-				data={todos}
-				onEdit={handleEditTodo}
-				onDelete={handleDeleteTodo}
-				onDuplicate={handleDuplicateTodo}
-				onSelectionChange={handleSelectionChange}
-				{clearSelectionSignal}
-			/>
-		{:else}
-			<div class="py-8 text-center">
-				<p class="text-muted-foreground">No tasks yet. Add one above to get started!</p>
-			</div>
-		{/if}
-	{:catch}
+	{:else if todosQuery.error}
 		<div class="py-8 text-center">
 			<p class="text-destructive">Failed to load tasks. Please try again.</p>
 		</div>
-	{/await}
+	{:else if todosQuery.current && todosQuery.current.length > 0}
+		<TodoDataTable
+			data={todosQuery.current}
+			onEdit={handleEditTodo}
+			onDelete={handleDeleteTodo}
+			onDuplicate={handleDuplicateTodo}
+			onSelectionChange={handleSelectionChange}
+			{clearSelectionSignal}
+		/>
+	{:else}
+		<div class="py-8 text-center">
+			<p class="text-muted-foreground">No tasks yet. Add one above to get started!</p>
+		</div>
+	{/if}
 </div>
 
 <BulkOperationsDock

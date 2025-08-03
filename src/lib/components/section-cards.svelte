@@ -1,91 +1,149 @@
 <script lang="ts">
-	import TrendingDownIcon from "@tabler/icons-svelte/icons/trending-down";
-	import TrendingUpIcon from "@tabler/icons-svelte/icons/trending-up";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
+	import TrendingDownIcon from '@tabler/icons-svelte/icons/trending-down';
+	import TrendingUpIcon from '@tabler/icons-svelte/icons/trending-up';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { getDashboardStats } from '$lib/dashboard.remote.js';
+
+	const statsQuery = getDashboardStats();
 </script>
 
-<div
-	class="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t lg:px-6"
->
-	<Card.Root class="@container/card">
-		<Card.Header>
-			<Card.Description>Total Revenue</Card.Description>
-			<Card.Title class="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-				$1,250.00
-			</Card.Title>
-			<Card.Action>
-				<Badge variant="outline">
-					<TrendingUpIcon />
-					+12.5%
-				</Badge>
-			</Card.Action>
-		</Card.Header>
-		<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-			<div class="line-clamp-1 flex gap-2 font-medium">
-				Trending up this month <TrendingUpIcon class="size-4" />
-			</div>
-			<div class="text-muted-foreground">Visitors for the last 6 months</div>
-		</Card.Footer>
-	</Card.Root>
-	<Card.Root class="@container/card">
-		<Card.Header>
-			<Card.Description>New Customers</Card.Description>
-			<Card.Title class="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-				1,234
-			</Card.Title>
-			<Card.Action>
-				<Badge variant="outline">
-					<TrendingDownIcon />
-					-20%
-				</Badge>
-			</Card.Action>
-		</Card.Header>
-		<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-			<div class="line-clamp-1 flex gap-2 font-medium">
-				Down 20% this period <TrendingDownIcon class="size-4" />
-			</div>
-			<div class="text-muted-foreground">Acquisition needs attention</div>
-		</Card.Footer>
-	</Card.Root>
-	<Card.Root class="@container/card">
-		<Card.Header>
-			<Card.Description>Active Accounts</Card.Description>
-			<Card.Title class="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-				45,678
-			</Card.Title>
-			<Card.Action>
-				<Badge variant="outline">
-					<TrendingUpIcon />
-					+12.5%
-				</Badge>
-			</Card.Action>
-		</Card.Header>
-		<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-			<div class="line-clamp-1 flex gap-2 font-medium">
-				Strong user retention <TrendingUpIcon class="size-4" />
-			</div>
-			<div class="text-muted-foreground">Engagement exceed targets</div>
-		</Card.Footer>
-	</Card.Root>
-	<Card.Root class="@container/card">
-		<Card.Header>
-			<Card.Description>Growth Rate</Card.Description>
-			<Card.Title class="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-				4.5%
-			</Card.Title>
-			<Card.Action>
-				<Badge variant="outline">
-					<TrendingUpIcon />
-					+4.5%
-				</Badge>
-			</Card.Action>
-		</Card.Header>
-		<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-			<div class="line-clamp-1 flex gap-2 font-medium">
-				Steady performance increase <TrendingUpIcon class="size-4" />
-			</div>
-			<div class="text-muted-foreground">Meets growth projections</div>
-		</Card.Footer>
-	</Card.Root>
-</div>
+{#if statsQuery.error}
+	<div
+		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
+	>
+		<Card.Root class="@container/card">
+			<Card.Header>
+				<Card.Description>Error</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+					--
+				</Card.Title>
+				<Card.Action>
+					<Badge variant="destructive">Error</Badge>
+				</Card.Action>
+			</Card.Header>
+			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+				<div class="line-clamp-1 flex gap-2 font-medium">Failed to load statistics</div>
+				<div class="text-muted-foreground">Please try refreshing the page</div>
+			</Card.Footer>
+		</Card.Root>
+	</div>
+{:else if statsQuery.loading}
+	<div
+		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
+	>
+		{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
+			<Card.Root class="@container/card">
+				<Card.Header>
+					<Card.Description>Loading...</Card.Description>
+					<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+						--
+					</Card.Title>
+				</Card.Header>
+				<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+					<div class="line-clamp-1 flex gap-2 font-medium">Loading statistics...</div>
+					<div class="text-muted-foreground">Please wait</div>
+				</Card.Footer>
+			</Card.Root>
+		{/each}
+	</div>
+{:else}
+	<div
+		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
+	>
+		<Card.Root class="@container/card">
+			<Card.Header>
+				<Card.Description>Total Tasks</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+					{statsQuery.current?.totalTodos ?? 0}
+				</Card.Title>
+				<Card.Action>
+					<Badge variant="outline">
+						<TrendingUpIcon />
+						Active
+					</Badge>
+				</Card.Action>
+			</Card.Header>
+			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+				<div class="line-clamp-1 flex gap-2 font-medium">
+					All tasks in your workspace <TrendingUpIcon class="size-4" />
+				</div>
+				<div class="text-muted-foreground">Total number of tasks created</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="@container/card">
+			<Card.Header>
+				<Card.Description>Completed Tasks</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+					{statsQuery.current?.completedTodos ?? 0}
+				</Card.Title>
+				<Card.Action>
+					<Badge variant="outline">
+						<TrendingUpIcon />
+						{statsQuery.current?.completionRate ?? 0}%
+					</Badge>
+				</Card.Action>
+			</Card.Header>
+			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+				<div class="line-clamp-1 flex gap-2 font-medium">
+					{statsQuery.current?.completionRate ?? 0}% completion rate <TrendingUpIcon
+						class="size-4"
+					/>
+				</div>
+				<div class="text-muted-foreground">Tasks marked as done</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="@container/card">
+			<Card.Header>
+				<Card.Description>In Progress</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+					{statsQuery.current?.inProgressTodos ?? 0}
+				</Card.Title>
+				<Card.Action>
+					<Badge variant="outline">
+						<TrendingUpIcon />
+						Active
+					</Badge>
+				</Card.Action>
+			</Card.Header>
+			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+				<div class="line-clamp-1 flex gap-2 font-medium">
+					Currently being worked on <TrendingUpIcon class="size-4" />
+				</div>
+				<div class="text-muted-foreground">Tasks in active development</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="@container/card">
+			<Card.Header>
+				<Card.Description>High Priority</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+					{statsQuery.current?.highPriorityTodos ?? 0}
+				</Card.Title>
+				<Card.Action>
+					<Badge variant="outline">
+						{#if (statsQuery.current?.highPriorityTodos ?? 0) > 5}
+							<TrendingUpIcon />
+							Urgent
+						{:else}
+							<TrendingDownIcon />
+							Manageable
+						{/if}
+					</Badge>
+				</Card.Action>
+			</Card.Header>
+			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
+				<div class="line-clamp-1 flex gap-2 font-medium">
+					{#if (statsQuery.current?.highPriorityTodos ?? 0) > 5}
+						High priority backlog needs attention <TrendingUpIcon class="size-4" />
+					{:else}
+						Priority level is manageable <TrendingDownIcon class="size-4" />
+					{/if}
+				</div>
+				<div class="text-muted-foreground">High priority tasks pending</div>
+			</Card.Footer>
+		</Card.Root>
+	</div>
+{/if}
