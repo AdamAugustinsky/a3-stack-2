@@ -1,8 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-# A3 Stack Svelte - Project Documentation
+# A3 Stack Svelte - AI Documentation
 
 ## Project Overview
 
@@ -20,17 +16,17 @@ This is a modern full-stack web application built with the **A3 Stack**:
 ### Core Stack
 
 - **SvelteKit 2.27+** with experimental remote functions and async compiler
-- **Svelte 5** with runes and modern reactive patterns
+- **Svelte 5** with runes and modern reactive patterns -- MAKE SURE TO ALWAYS USE SVELTE 5 SYNTAX.
 - **TypeScript** with strict configuration
-- **Vite 7** for fast builds and development
+- **Vite 7** through rolldown(rust rewrite) for fast builds and development
 - **Bun** as package manager (bun.lock present)
 
 ### Authentication System
 
 - **Better Auth 1.3+** with Drizzle adapter
 - Email/password authentication
-- Session management with PostgreSQL storage
-- Type-safe auth client for frontend integration
+- Session management with PostgreSQL
+- Authentication is always handled in the server through either Elysia or Sveltekit server actions/hooks/remote functions.
 
 ### Database & ORM
 
@@ -64,8 +60,7 @@ src/
 │   │   └── db/
 │   │       ├── index.ts     # Database connection
 │   │       └── schema.ts    # Drizzle schema definitions
-│   ├── schemas/
-│   │   └── auth.ts          # Valibot validation schemas
+│   ├── schemas/              # Valibot validation schemas
 │   └── utils.ts             # Utility functions
 ├── routes/
 │   ├── auth.remote.ts       # Remote functions for auth
@@ -414,26 +409,41 @@ const postSchema = v.object({
 });
 ```
 
-**Important**: Form functions do NOT support automatic validation - you must validate FormData manually:
+**Important**: Form functions do NOT support automatic validation — use Valibot to validate FormData:
 
 ```typescript
-export const createPost = form(async (data) => {
-	// Manual validation required for form functions
-	const title = data.get('title');
-	if (typeof title !== 'string' || !title) {
-		error(400, 'Title is required');
-	}
+import { form } from '$app/server';
+import { error } from '@sveltejs/kit';
+import * as v from 'valibot';
+
+// Define a schema for your form
+const createPostSchema = v.object({
+	title: v.pipe(v.string(), v.minLength(1, 'Title is required')),
+	content: v.pipe(v.string(), v.minLength(1, 'Content is required'))
 });
-```
+
+export const createPost = form(async (data) => {
+	// Validate with Valibot
+	const result = v.safeParse(createPostSchema, Object.fromEntries(data.entries()));
+
+	if (!result.success) {
+		// Collect the first error message or provide a generic one
+		const message =
+			result.issues?.[0]?.message ?? 'Invalid form submission';
+		error(400, message);
+	}
+
+	const { title, content } = result.output;
+
+});
 
 ### Best Practices
 
 1. **Validation**:
-   - Use Valibot schemas for query/command functions
-   - Manually validate FormData in form functions
+   - Use Valibot schemas for query/command functions through the native support, and in the code itself for form validations.
    - Define reusable schemas in separate files
 2. **Error Messages**: Use descriptive error messages with appropriate HTTP status codes
-3. **Loading States**: Implement loading states for better UX
+3. **Loading States**: Implement loading/disabled states for better UX
 4. **Type Safety**:
    - Use `isHttpError` for proper error typing
    - Valibot provides automatic TypeScript types via `v.InferOutput`
@@ -445,19 +455,11 @@ export const createPost = form(async (data) => {
 
 ### Local Development
 
-1. **Start PostgreSQL**: `npm run db:start` (Docker Compose)
-2. **Push schema**: `npm run db:push`
-3. **Generate migrations**: `npm run db:generate`
-4. **Run migrations**: `npm run db:migrate`
-5. **Database studio**: `npm run db:studio`
-
-### Environment Variables
-
-Required in `.env`:
-
-```
-DATABASE_URL="postgres://root:mysecretpassword@localhost:5432/local"
-```
+1. **Start PostgreSQL**: `bun run db:start` (Docker Compose)
+2. **Push schema**: `bun run db:push`
+3. **Generate migrations**: `bun run db:generate`
+4. **Run migrations**: `bun run db:migrate`
+5. **Database studio**: `bun run db:studio`
 
 ### Schema Overview
 
@@ -470,138 +472,44 @@ DATABASE_URL="postgres://root:mysecretpassword@localhost:5432/local"
 
 ### Primary Commands
 
-- `npm run dev` - Start development server
-- `npm run build` - Production build
-- `npm run preview` - Preview production build
-- `npm run check` - Type checking
-- `npm run lint` - ESLint and Prettier checks
-- `npm run format` - Format code with Prettier
+- `bun run dev` - Start development server
+- `bun run build` - Production build
+- `bun run preview` - Preview production build
+- `bun run check` - Type checking
+- `bun run lint` - ESLint and Prettier checks
+- `bun run format` - Format code with Prettier
 
 ### Database Commands
 
-- `npm run db:start` - Start PostgreSQL container
-- `npm run db:push` - Push schema changes
-- `npm run db:generate` - Generate migrations
-- `npm run db:migrate` - Run migrations
-- `npm run db:studio` - Open Drizzle Studio
+- `bun run db:start` - Start PostgreSQL container
+- `bun run db:push` - Push schema changes
+- `bun run db:generate` - Generate migrations
+- `bun run db:migrate` - Run migrations
+- `bun run db:studio` - Open Drizzle Studio
 
 ## Authentication Flow
 
 ### Better Auth Integration
 
 - Server-side configuration in `src/lib/server/auth.ts`
-- Frontend client in `src/lib/auth-client.ts`
-- Session management with PostgreSQL adapter
 - Email/password provider enabled
-
-### Auth Pages
-
-- **Sign In**: `/signin` - Uses remote function for authentication
-- **Sign Up**: `/signup` - User registration with validation
-- **Home**: `/` - Displays user session state
-
-### Security Features
-
-- Type-safe session handling
-- Proper error handling and user feedback
-- Loading states for better UX
-- Form validation with Valibot schemas
 
 ## Component Library
 
-### shadcn/ui Components Available
-
-Extensive collection including:
-
-- **Forms**: Button, Input, Label, Checkbox, Select, Textarea
-- **Layout**: Card, Sheet, Dialog, Drawer, Sidebar
-- **Navigation**: Breadcrumb, Navigation Menu, Pagination
-- **Data Display**: Table, Data Table, Badge, Avatar
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Overlays**: Popover, Tooltip, Context Menu, Dropdown Menu
-- **Advanced**: Calendar, Date Picker, Charts, Carousel
+### shadcn/ui Components Available at $lib/components/ui
 
 ### Component Usage
 
 ```svelte
-import {Button} from '$lib/components/ui/button'; import {(Card, CardContent, CardHeader)} from '$lib/components/ui/card';
+import {Button} from '$lib/components/ui/button';
+import * as Card from "$lib/components/ui/card/index.js";
 ```
-
-## TypeScript Configuration
-
-### Strict Settings
-
-- Full TypeScript strict mode enabled
-- ESModule interop and consistent casing
-- Bundler module resolution
-- Source maps for debugging
 
 ### Path Aliases
 
 - `@/*` → `./src/lib/*` (configured in svelte.config.js)
+- `@routes/*` → `./src/routes/*` (configured in svelte.config.js)
 - `$lib/*` → `./src/lib/*` (SvelteKit default)
-
-## Code Quality & Standards
-
-### ESLint Configuration
-
-- TypeScript and Svelte rules
-- Prettier integration
-- Browser and Node globals
-- Custom rule: `no-undef` disabled for TypeScript
-
-### Prettier Configuration
-
-- Svelte-aware formatting
-- TailwindCSS class sorting
-- Consistent code style across project
-
-## Key Implementation Notes
-
-### Remote Functions vs Form Actions
-
-- **Remote Functions**: Type-safe client-server communication, manual validation
-- **Form Actions**: Traditional server actions with automatic validation
-- This project uses remote functions for modern approach
-
-### Svelte 5 Patterns
-
-- `$state()` runes for reactive state
-- `$derived()` for computed values
-- Modern component composition
-- Enhanced type safety
-
-### Error Handling Strategy
-
-- HTTP status codes for different error types
-- User-friendly error messages
-- Loading states for async operations
-- Proper TypeScript error typing with `isHttpError`
-
-## Production Considerations
-
-### Build Configuration
-
-- **Adapter**: Node.js adapter for server deployment
-- **Vite Optimization**: TailwindCSS and SvelteKit plugins
-- **TypeScript**: Strict checking enabled
-- **Source Maps**: Available for debugging
-
-### Environment Setup
-
-- Database URL configuration required
-- Better Auth needs proper base URL
-- Docker setup for local PostgreSQL
-
-## Getting Started
-
-1. **Install dependencies**: `bun install`
-2. **Setup environment**: Copy `.env.example` to `.env`
-3. **Start database**: `npm run db:start`
-4. **Push schema**: `npm run db:push`
-5. **Start development**: `npm run dev`
-
-The application will be available at `http://localhost:5173` with full authentication functionality.
 
 ## Architecture Decisions
 
@@ -627,3 +535,43 @@ The application will be available at `http://localhost:5173` with full authentic
 - **Mobile-first**: Responsive design from the ground up
 
 This project demonstrates modern full-stack development patterns with SvelteKit, showcasing experimental features and best practices for authentication, database management, and user interface development.
+
+## Code Preferences
+
+The following preferences guide how we write and maintain code in this repository, inferred from recent changes and aligned with our Simplicity philosophy:
+
+1. Simplicity and Minimalism
+   - Inline simple logic rather than creating helpers that add indirection without clear value.
+   - Avoid abstractions that obscure behavior or reduce type inference.
+   - Endpoints should be straightforward: validate input, perform database operations, return results.
+
+2. TypeScript Strictness
+   - Prefer precise union types for UI state (e.g., '30d' | '14d' | '7d').
+   - Use Record<Union, T> for constant maps to avoid unsafe indexing and fallbacks.
+   - Eliminate any and ts-expect-error; use small, local generics only when they materially improve clarity.
+
+3. Data Integrity for Charts/APIs
+   - APIs should return dense, normalized, zero-safe time series (no NaNs/undefined).
+   - Backend is responsible for consistent data; frontend still normalizes defensively (Date and number coercion).
+
+4. Real Data Over Mocks
+   - Replace mocked or simulated data with real database-backed computations.
+   - Add schema fields (e.g., created_at, updated_at) to support analytics rather than generating synthetic series.
+
+5. Validation and Security
+   - Keep validation at the route level and close to usage.
+   - Server controls sensitive fields like timestamps; never trust client-provided timestamps.
+   - Use parameterized ORM operations; avoid dynamic SQL.
+
+6. Code Style and Organization
+   - Prefer concise, readable endpoints with obvious side effects.
+   - Use tiny, local helpers only when they clearly reduce duplication and remain obvious.
+   - Avoid classes; design functions as data-in/data-out pipelines.
+
+7. Developer Ergonomics
+   - Favor code that’s easy to scan and understand locally without searching for helpers.
+   - Remove code and abstractions unless they demonstrate clear payoff in reuse or complexity reduction.
+
+8. Testing Approach
+   - Keep data shaping as pure functions where feasible, making it easy to test deterministically.
+   - Limit side effects to boundaries (DB/HTTP). If tests require side effects, use created services.
