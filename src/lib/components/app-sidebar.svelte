@@ -11,6 +11,7 @@
 	import ReportIcon from '@tabler/icons-svelte/icons/report';
 	import SearchIcon from '@tabler/icons-svelte/icons/search';
 	import SettingsIcon from '@tabler/icons-svelte/icons/settings';
+
 	import NavMain from './nav-main.svelte';
 	import NavSecondary from './nav-secondary.svelte';
 	import NavUser from './nav-user.svelte';

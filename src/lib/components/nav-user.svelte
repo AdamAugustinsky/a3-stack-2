@@ -80,7 +80,7 @@
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => goto('/account')}>
 						<UserCircleIcon />
 						Account
 					</DropdownMenu.Item>
