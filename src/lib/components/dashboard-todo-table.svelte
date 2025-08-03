@@ -4,8 +4,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { getTodos } from '@routes/(protected)/todos/todo.remote.js';
 	import { labels, statuses, priorities } from '@routes/(protected)/todos/components/data';
-
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import { ExternalLinkIcon } from '@lucide/svelte';
 
 	const todosQuery = getTodos();
 
