@@ -63,16 +63,15 @@
 		"tw-animate-css": "^1.3.6",
 		"typescript": "^5.9.2",
 		"typescript-eslint": "^8.38.0",
+		"valibot": "^1.1.0",
 		"vaul-svelte": "^1.0.0-next.7",
-		"vite": "npm:rolldown-vite@latest",
-		"zod": "^3.25.64"
+		"vite": "npm:rolldown-vite@latest"
 	},
 	"dependencies": {
 		"@elysiajs/eden": "^1.3.2",
 		"better-auth": "^1.3.4",
 		"drizzle-orm": "^0.44.4",
 		"elysia": "^1.3.8",
-		"pg": "^8.16.3",
-		"valibot": "^1.1.0"
+		"pg": "^8.16.3"
 	}
 }
