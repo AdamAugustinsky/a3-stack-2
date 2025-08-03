@@ -2,8 +2,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { getTodos } from '../../routes/(protected)/todos/todo.remote.js';
-	import { labels, statuses, priorities } from '../../routes/(protected)/todos/components/data.js';
+	import { getTodos } from '@routes/(protected)/todos/todo.remote.js';
+	import { labels, statuses, priorities } from '@routes/(protected)/todos/components/data';
 
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 

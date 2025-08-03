@@ -6,7 +6,7 @@
 	import { scaleUtc } from 'd3-scale';
 	import { Area, AreaChart } from 'layerchart';
 	import { curveNatural } from 'd3-shape';
-	import { getRecentActivity } from '$lib/dashboard.remote.js';
+	import { getRecentActivity } from '@routes/(protected)/dashboard/dashboard.remote';
 
 	const activityQuery = getRecentActivity();
 
