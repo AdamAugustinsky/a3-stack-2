@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { AudioWaveformIcon, CommandIcon, GalleryVerticalEndIcon } from '@lucide/svelte';
 	import CameraIcon from '@tabler/icons-svelte/icons/camera';
 	import DashboardIcon from '@tabler/icons-svelte/icons/dashboard';
 	import DatabaseIcon from '@tabler/icons-svelte/icons/database';
@@ -6,18 +8,16 @@
 	import FileDescriptionIcon from '@tabler/icons-svelte/icons/file-description';
 	import FileWordIcon from '@tabler/icons-svelte/icons/file-word';
 	import HelpIcon from '@tabler/icons-svelte/icons/help';
-	import InnerShadowTopIcon from '@tabler/icons-svelte/icons/inner-shadow-top';
 	import ListDetailsIcon from '@tabler/icons-svelte/icons/list-details';
 	import ReportIcon from '@tabler/icons-svelte/icons/report';
 	import SearchIcon from '@tabler/icons-svelte/icons/search';
 	import SettingsIcon from '@tabler/icons-svelte/icons/settings';
-
+	import type { User } from 'better-auth';
+	import type { ComponentProps } from 'svelte';
 	import NavMain from './nav-main.svelte';
 	import NavSecondary from './nav-secondary.svelte';
 	import NavUser from './nav-user.svelte';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import type { ComponentProps } from 'svelte';
-	import type { User } from 'better-auth';
+	import OrgSwitcher from './org-switcher.svelte';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
@@ -121,11 +121,29 @@
 			}
 		]
 	};
+
+	const orgs = [
+		{
+			name: 'Acme Inc',
+			logo: GalleryVerticalEndIcon,
+			plan: 'Enterprise'
+		},
+		{
+			name: 'Acme Corp.',
+			logo: AudioWaveformIcon,
+			plan: 'Startup'
+		},
+		{
+			name: 'Evil Corp.',
+			logo: CommandIcon,
+			plan: 'Free'
+		}
+	];
 </script>
 
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
 	<Sidebar.Header>
-		<Sidebar.Menu>
+		<!-- <Sidebar.Menu>
 			<Sidebar.MenuItem>
 				<Sidebar.MenuButton class="data-[slot=sidebar-menu-button]:!p-1.5">
 					{#snippet child({ props })}
@@ -136,7 +154,8 @@
 					{/snippet}
 				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>
-		</Sidebar.Menu>
+		</Sidebar.Menu> -->
+		<OrgSwitcher {orgs} />
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<NavMain items={data.navMain} />

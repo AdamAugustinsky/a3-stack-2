@@ -6,17 +6,16 @@ import { getRequestEvent } from '$app/server';
 import { organization } from 'better-auth/plugins';
 import { stripe } from '@better-auth/stripe';
 import Stripe from 'stripe';
-import { env } from '$env/dynamic/private';
 
-if (!env.STRIPE_SECRET_KEY) {
+if (!Bun.env.STRIPE_SECRET_KEY) {
 	throw new Error('STRIPE_SECRET_KEY is not defined');
 }
 
-if (!env.STRIPE_WEBHOOK_SECRET) {
+if (!Bun.env.STRIPE_WEBHOOK_SECRET) {
 	throw new Error('STRIPE_WEBHOOK_SECRET is not defined');
 }
 
-const stripeClient = new Stripe(env.STRIPE_SECRET_KEY, {
+const stripeClient = new Stripe(Bun.env.STRIPE_SECRET_KEY, {
 	apiVersion: '2025-07-30.basil'
 });
 
@@ -32,7 +31,7 @@ export const auth = betterAuth({
 		organization(),
 		stripe({
 			stripeClient,
-			stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
+			stripeWebhookSecret: Bun.env.STRIPE_WEBHOOK_SECRET,
 			createCustomerOnSignUp: true
 		})
 	]
