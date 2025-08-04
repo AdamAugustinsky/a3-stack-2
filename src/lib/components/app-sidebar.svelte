@@ -18,12 +18,25 @@
 	import NavSecondary from './nav-secondary.svelte';
 	import NavUser from './nav-user.svelte';
 	import OrgSwitcher from './org-switcher.svelte';
+	import { getActiveOrganization, listOrganizations } from '@routes/organization.remote';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
 	};
 
+	type Organization = {
+		id: string;
+		name: string;
+		slug?: string;
+		logo?: string | null;
+		metadata?: Record<string, unknown> | null;
+	};
+
 	let { user, ...restProps }: Props = $props();
+
+	// Remote queries for organizations
+	const orgsQuery = listOrganizations();
+	const activeOrgQuery = getActiveOrganization();
 
 	const data = {
 		navMain: [
@@ -122,40 +135,39 @@
 		]
 	};
 
-	const orgs = [
-		{
-			name: 'Acme Inc',
-			logo: GalleryVerticalEndIcon,
-			plan: 'Enterprise'
-		},
-		{
-			name: 'Acme Corp.',
-			logo: AudioWaveformIcon,
-			plan: 'Startup'
-		},
-		{
-			name: 'Evil Corp.',
-			logo: CommandIcon,
-			plan: 'Free'
-		}
-	];
+	// Fallback icons map by index to keep current UI vibe when no logo is set
+	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
+
+	function toSwitcherOrgs(orgs: Organization[]) {
+		// Normalize Better Auth organizations to the shape expected by OrgSwitcher
+		// We preserve id and slug if present so OrgSwitcher can set active org accurately
+		return (orgs ?? []).map((o, i) => ({
+			id: o.id,
+			slug: o.slug,
+			name: o.name,
+			// If your org.logo is a URL string, keep the fallback icon; otherwise adapt when you add a component logo
+			logo: o.logo
+				? fallbackLogos[i % fallbackLogos.length]
+				: fallbackLogos[i % fallbackLogos.length],
+			plan:
+				o.metadata && typeof o.metadata === 'object' && 'plan' in o.metadata
+					? String((o.metadata as Record<string, unknown>)['plan'])
+					: ''
+		}));
+	}
 </script>
 
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
 	<Sidebar.Header>
-		<!-- <Sidebar.Menu>
-			<Sidebar.MenuItem>
-				<Sidebar.MenuButton class="data-[slot=sidebar-menu-button]:!p-1.5">
-					{#snippet child({ props })}
-						<a href="##" {...props}>
-							<InnerShadowTopIcon class="!size-5" />
-							<span class="text-base font-semibold">Acme Inc.</span>
-						</a>
-					{/snippet}
-				</Sidebar.MenuButton>
-			</Sidebar.MenuItem>
-		</Sidebar.Menu> -->
-		<OrgSwitcher {orgs} />
+		{#if orgsQuery.loading || activeOrgQuery.loading}
+			<div class="px-2 py-1.5 text-sm text-muted-foreground">Loading organizations…</div>
+		{:else if orgsQuery.error}
+			<div class="px-2 py-1.5 text-sm text-destructive">Failed to load organizations</div>
+		{:else}
+			{#key (orgsQuery.current?.length ?? 0) + '-' + (activeOrgQuery.current?.id ?? 'none')}
+				<OrgSwitcher orgs={toSwitcherOrgs(orgsQuery.current ?? [])} />
+			{/key}
+		{/if}
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<NavMain items={data.navMain} />
