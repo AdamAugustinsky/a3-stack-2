@@ -18,7 +18,8 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "bun run scripts/seed-todos.ts",
-		"db:seed:todos": "bun run scripts/seed-todos.ts"
+		"db:seed:todos": "bun run scripts/seed-todos.ts",
+		"stripe:seed": "bun run scripts/stripe-seed.ts"
 	},
 	"devDependencies": {
 		"@dnd-kit-svelte/core": "^0.0.8",
