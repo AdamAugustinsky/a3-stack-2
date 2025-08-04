@@ -3,8 +3,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { createOrganization } from '@routes/organization.remote';
-	import { isHttpError } from '@sveltejs/kit';
+	import { authClient } from '$lib/auth-client';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 
 	let { open = $bindable(false), onSuccess }: { open?: boolean; onSuccess?: () => void } = $props();
@@ -45,24 +44,28 @@
 		</Dialog.Header>
 
 		<form
-			{...createOrganization.enhance(async ({ submit }) => {
+			onsubmit={async (e) => {
+				e.preventDefault();
 				errorValue = undefined;
 				loading = true;
 
 				try {
-					await submit();
+					await authClient.organization.create({
+						name: nameValue,
+						slug: slugValue
+					});
 					open = false;
 					onSuccess?.();
 				} catch (error) {
-					if (isHttpError(error)) {
-						errorValue = error.body.message;
+					if (error instanceof Error) {
+						errorValue = error.message;
 					} else {
 						errorValue = 'An unexpected error occurred';
 					}
 				} finally {
 					loading = false;
 				}
-			})}
+			}}
 			class="space-y-4"
 		>
 			<div class="space-y-2">

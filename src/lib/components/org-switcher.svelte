@@ -4,8 +4,8 @@
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { setActiveOrganization } from '@routes/organization.remote';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
+	import { authClient } from '$lib/auth-client';
 
 	type Organization = {
 		id: string;
@@ -17,7 +17,15 @@
 
 	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
 
-	let { orgs }: { orgs: Organization[] } = $props();
+	let {
+		orgs,
+		activeOrganization,
+		onOrganizationChange
+	}: {
+		orgs: Organization[];
+		activeOrganization: Organization | null;
+		onOrganizationChange?: () => void;
+	} = $props();
 
 	// Fallback icons map by index to keep current UI vibe when no logo is set
 	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
@@ -29,36 +37,15 @@
 		return '';
 	}
 	const sidebar = useSidebar();
-	let activeOrg = $state<Organization | undefined>(orgs?.[0]);
-
-	$inspect('activeOrg', activeOrg);
 	let showCreateOrgDialog = $state(false);
-
-	// Update activeOrg when orgs change
-	$effect(() => {
-		if (orgs && orgs.length > 0 && !activeOrg) {
-			activeOrg = orgs[0];
-		}
-		// If current activeOrg is no longer in the list, select the first one
-		if (activeOrg && orgs && !orgs.find((org) => org.id === activeOrg?.id)) {
-			activeOrg = orgs[0];
-		}
-	});
 
 	async function handleSelect(org: Organization) {
 		try {
-			// Prefer id when available; fall back to slug
-			if (org.id) {
-				await setActiveOrganization({ organizationId: org.id });
-			} else if (org.slug) {
-				await setActiveOrganization({ organizationSlug: org.slug });
-			} else {
-				return;
-			}
-			activeOrg = org;
-			// Consumers can re-fetch as needed; removed local refresh helper usage
+			await authClient.organization.setActive({
+				organizationId: org.id
+			});
+			onOrganizationChange?.();
 		} catch (e) {
-			// lightweight error surface; real error toasts can be added later
 			console.error('Failed to set active organization', e);
 		}
 	}
@@ -74,8 +61,11 @@
 						size="lg"
 						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 					>
-						{#if activeOrg}
-							{@const FallbackIcon = fallbackLogos[orgs.indexOf(activeOrg) % fallbackLogos.length]}
+						{#if activeOrganization}
+							{@const FallbackIcon =
+								fallbackLogos[
+									orgs.findIndex((o) => o.id === activeOrganization.id) % fallbackLogos.length
+								]}
 							<div
 								class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
 							>
@@ -90,9 +80,11 @@
 						{/if}
 						<div class="grid flex-1 text-left text-sm leading-tight">
 							<span class="truncate font-medium">
-								{activeOrg?.name ?? 'Select organization'}
+								{activeOrganization?.name ?? 'Select organization'}
 							</span>
-							<span class="truncate text-xs">{activeOrg ? getPlan(activeOrg) : ''}</span>
+							<span class="truncate text-xs"
+								>{activeOrganization ? getPlan(activeOrganization) : ''}</span
+							>
 						</div>
 						<ChevronsUpDownIcon class="ml-auto" />
 					</Sidebar.MenuButton>
@@ -127,4 +119,4 @@
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<CreateOrganizationDialog bind:open={showCreateOrgDialog} />
+<CreateOrganizationDialog bind:open={showCreateOrgDialog} onSuccess={onOrganizationChange} />

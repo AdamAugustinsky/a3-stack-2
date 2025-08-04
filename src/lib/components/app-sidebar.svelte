@@ -18,7 +18,7 @@
 	import NavUser from './nav-user.svelte';
 	import OrgSwitcher from './org-switcher.svelte';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
-	import { getActiveOrganization, listOrganizations } from '@routes/organization.remote';
+	import { authClient } from '$lib/auth-client';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
@@ -26,23 +26,60 @@
 
 	let { user, ...restProps }: Props = $props();
 
-	// Remote queries for organizations
-	const orgsQuery = listOrganizations();
+	type Organization = {
+		id: string;
+		name: string;
+		slug?: string;
+		logo?: string | null;
+		metadata?: Record<string, unknown> | null;
+	};
 
-	$effect(() => {
-		console.log('orgsQuery:', orgsQuery.current);
-	});
-	const activeOrgQuery = getActiveOrganization();
+	// Organization state
+	let organizations = $state<Organization[]>([]);
+	let activeOrganization = $state<Organization | null>(null);
+	let loadingOrgs = $state(true);
+	let orgsError = $state<string | null>(null);
 
 	// Dialog state
 	let showCreateOrgDialog = $state(false);
 
-	// Check if we need to show create org dialog
-	$effect(() => {
-		if (!orgsQuery.loading && !orgsQuery.error && orgsQuery.current?.length === 0) {
-			showCreateOrgDialog = true;
+	async function loadOrganizations() {
+		try {
+			loadingOrgs = true;
+			orgsError = null;
+
+			// Get organizations list
+			const orgsResponse = await authClient.organization.list();
+			organizations = orgsResponse.data || [];
+
+			// Get session to find active organization
+			const session = await authClient.getSession();
+			const activeOrgId = session.data?.session?.activeOrganizationId;
+
+			if (activeOrgId) {
+				activeOrganization = organizations.find((org) => org.id === activeOrgId) || null;
+			} else if (organizations.length > 0) {
+				// Default to first organization if none is active
+				activeOrganization = organizations[0];
+				await authClient.organization.setActive({
+					organizationId: organizations[0].id
+				});
+			} else {
+				activeOrganization = null;
+			}
+
+			// Show create dialog if no organizations
+			if (organizations.length === 0) {
+				showCreateOrgDialog = true;
+			}
+		} catch (error) {
+			orgsError = 'Failed to load organizations';
+			console.error('Failed to load organizations:', error);
+		} finally {
+			loadingOrgs = false;
 		}
-	});
+	}
+	loadOrganizations();
 
 	const data = {
 		navMain: [
@@ -144,15 +181,19 @@
 
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
 	<Sidebar.Header>
-		{#if orgsQuery.loading || activeOrgQuery.loading}
+		{#if loadingOrgs}
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">Loading organizations…</div>
-		{:else if orgsQuery.error}
-			<div class="px-2 py-1.5 text-sm text-destructive">Failed to load organizations</div>
-		{:else if !orgsQuery.current || orgsQuery.current?.length === 0}
+		{:else if orgsError}
+			<div class="px-2 py-1.5 text-sm text-destructive">{orgsError}</div>
+		{:else if organizations.length === 0}
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">No organizations yet</div>
 		{:else}
-			{#key (orgsQuery.current?.length ?? 0) + '-' + (activeOrgQuery.current?.id ?? 'none')}
-				<OrgSwitcher orgs={orgsQuery.current ?? []} />
+			{#key organizations.length + '-' + (activeOrganization?.id ?? 'none')}
+				<OrgSwitcher
+					orgs={organizations}
+					{activeOrganization}
+					onOrganizationChange={loadOrganizations}
+				/>
 			{/key}
 		{/if}
 	</Sidebar.Header>
@@ -165,4 +206,4 @@
 	</Sidebar.Footer>
 </Sidebar.Root>
 
-<CreateOrganizationDialog bind:open={showCreateOrgDialog} />
+<CreateOrganizationDialog bind:open={showCreateOrgDialog} onSuccess={loadOrganizations} />
