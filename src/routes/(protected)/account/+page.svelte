@@ -280,7 +280,7 @@
 						</div>
 						<Button
 							variant="outline"
-							onclick={() => alert('Change password functionality coming soon!')}
+							onclick={() => window.alert('Change password functionality coming soon!')}
 						>
 							Change Password
 						</Button>
@@ -305,7 +305,7 @@
 							<Button
 								variant="destructive"
 								onclick={() => {
-									alert('Account deletion is not implemented yet.');
+									window.alert('Account deletion is not implemented yet.');
 								}}
 							>
 								Delete Account

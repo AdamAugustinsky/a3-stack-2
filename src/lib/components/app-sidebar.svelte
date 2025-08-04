@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { AudioWaveformIcon, CommandIcon, GalleryVerticalEndIcon } from '@lucide/svelte';
 	import CameraIcon from '@tabler/icons-svelte/icons/camera';
 	import DashboardIcon from '@tabler/icons-svelte/icons/dashboard';
 	import DatabaseIcon from '@tabler/icons-svelte/icons/database';
@@ -18,25 +17,32 @@
 	import NavSecondary from './nav-secondary.svelte';
 	import NavUser from './nav-user.svelte';
 	import OrgSwitcher from './org-switcher.svelte';
+	import CreateOrganizationDialog from './create-organization-dialog.svelte';
 	import { getActiveOrganization, listOrganizations } from '@routes/organization.remote';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
 	};
 
-	type Organization = {
-		id: string;
-		name: string;
-		slug?: string;
-		logo?: string | null;
-		metadata?: Record<string, unknown> | null;
-	};
-
 	let { user, ...restProps }: Props = $props();
 
 	// Remote queries for organizations
 	const orgsQuery = listOrganizations();
+
+	$effect(() => {
+		console.log('orgsQuery:', orgsQuery.current);
+	});
 	const activeOrgQuery = getActiveOrganization();
+
+	// Dialog state
+	let showCreateOrgDialog = $state(false);
+
+	// Check if we need to show create org dialog
+	$effect(() => {
+		if (!orgsQuery.loading && !orgsQuery.error && orgsQuery.current?.length === 0) {
+			showCreateOrgDialog = true;
+		}
+	});
 
 	const data = {
 		navMain: [
@@ -134,27 +140,6 @@
 			}
 		]
 	};
-
-	// Fallback icons map by index to keep current UI vibe when no logo is set
-	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
-
-	function toSwitcherOrgs(orgs: Organization[]) {
-		// Normalize Better Auth organizations to the shape expected by OrgSwitcher
-		// We preserve id and slug if present so OrgSwitcher can set active org accurately
-		return (orgs ?? []).map((o, i) => ({
-			id: o.id,
-			slug: o.slug,
-			name: o.name,
-			// If your org.logo is a URL string, keep the fallback icon; otherwise adapt when you add a component logo
-			logo: o.logo
-				? fallbackLogos[i % fallbackLogos.length]
-				: fallbackLogos[i % fallbackLogos.length],
-			plan:
-				o.metadata && typeof o.metadata === 'object' && 'plan' in o.metadata
-					? String((o.metadata as Record<string, unknown>)['plan'])
-					: ''
-		}));
-	}
 </script>
 
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
@@ -163,9 +148,11 @@
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">Loading organizations…</div>
 		{:else if orgsQuery.error}
 			<div class="px-2 py-1.5 text-sm text-destructive">Failed to load organizations</div>
+		{:else if !orgsQuery.current || orgsQuery.current?.length === 0}
+			<div class="px-2 py-1.5 text-sm text-muted-foreground">No organizations yet</div>
 		{:else}
 			{#key (orgsQuery.current?.length ?? 0) + '-' + (activeOrgQuery.current?.id ?? 'none')}
-				<OrgSwitcher orgs={toSwitcherOrgs(orgsQuery.current ?? [])} />
+				<OrgSwitcher orgs={orgsQuery.current ?? []} />
 			{/key}
 		{/if}
 	</Sidebar.Header>
@@ -177,3 +164,5 @@
 		<NavUser {user} />
 	</Sidebar.Footer>
 </Sidebar.Root>
+
+<CreateOrganizationDialog bind:open={showCreateOrgDialog} />

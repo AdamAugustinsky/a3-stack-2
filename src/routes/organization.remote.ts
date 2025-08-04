@@ -115,6 +115,7 @@ const removeMemberSchema = v.object({
 export const listOrganizations = query(async () => {
 	const headers = getRequestEvent().request.headers;
 	const result = await auth.api.listOrganizations({ headers });
+	console.log({ result });
 	return Array.isArray(result) ? result : [];
 });
 
