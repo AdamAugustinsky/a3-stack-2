@@ -156,7 +156,12 @@
 
 			if (error) {
 				console.error('Upgrade failed:', error);
-				errorMessage = error.message || 'Failed to start upgrade process';
+				if (error.message?.includes('portal configuration')) {
+					errorMessage =
+						'Stripe Customer Portal is not properly configured. Please contact support.';
+				} else {
+					errorMessage = error.message || 'Failed to start upgrade process';
+				}
 			}
 		} finally {
 			upgrading = false;
@@ -167,16 +172,33 @@
 		const activeOrg = $activeOrganization.data;
 		if (!activeOrg) return;
 
+		// Check if there's an active subscription
+		if (!subscription || !subscription.stripeCustomerId) {
+			errorMessage = 'No active subscription found. Please upgrade to a paid plan first.';
+			return;
+		}
+
 		try {
+			// Use Better Auth's subscription.cancel method which opens the billing portal
 			const { error } = await authClient.subscription.cancel({
 				referenceId: activeOrg.id,
-				subscriptionId: subscription?.stripeSubscriptionId || undefined,
+				subscriptionId: subscription.stripeSubscriptionId,
 				returnUrl: `${window.location.origin}/organization/billing`
 			});
 
 			if (error) {
 				console.error('Failed to open billing portal:', error);
-				errorMessage = error.message || 'Failed to open billing portal';
+				if (error.message?.includes('portal configuration')) {
+					errorMessage =
+						'Stripe Customer Portal configuration is incomplete. Please contact support to enable billing management features.';
+				} else if (
+					error.message?.includes('No customer found') ||
+					error.message?.includes('not found')
+				) {
+					errorMessage = 'No billing information found. Please upgrade to a paid plan first.';
+				} else {
+					errorMessage = error.message || 'Failed to open billing portal';
+				}
 			}
 		} catch (error) {
 			console.error('Failed to open billing portal:', error);
@@ -236,8 +258,18 @@
 	{:else if errorMessage}
 		<Alert.Root variant="destructive">
 			<InfoCircleIcon class="h-4 w-4" />
-			<Alert.Title>Error</Alert.Title>
-			<Alert.Description>{errorMessage}</Alert.Description>
+			<Alert.Title>Configuration Required</Alert.Title>
+			<Alert.Description>
+				{errorMessage}
+				{#if errorMessage.includes('portal configuration')}
+					<br /><br />
+					<strong>To fix this:</strong>
+					<br />1. Go to your Stripe Dashboard
+					<br />2. Navigate to Settings → Billing → Customer Portal
+					<br />3. Enable "Update subscription" and "Cancel subscription" features
+					<br />4. Save the configuration
+				{/if}
+			</Alert.Description>
 		</Alert.Root>
 	{:else if $activeOrganization.data}
 		<!-- Current Plan Overview -->
@@ -292,9 +324,13 @@
 						</div>
 					{/if}
 
-					{#if subscription}
+					{#if subscription && subscription.stripeCustomerId}
 						<div class="flex items-center justify-end gap-2">
 							<Button variant="outline" onclick={handleManageBilling}>Manage Billing</Button>
+						</div>
+					{:else if !subscription}
+						<div class="flex items-center justify-end gap-2">
+							<p class="text-sm text-muted-foreground">Upgrade to a paid plan to manage billing</p>
 						</div>
 					{/if}
 				</div>
