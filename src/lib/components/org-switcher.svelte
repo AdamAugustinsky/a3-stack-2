@@ -18,24 +18,60 @@
 	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
 
 	let {
-		orgs,
-		activeOrganization,
+		orgs = [],
+		activeOrganization = null,
 		onOrganizationChange
-	}: {
+	} = $props<{
 		orgs: Organization[];
 		activeOrganization: Organization | null;
 		onOrganizationChange?: () => void;
-	} = $props();
+	}>();
 
 	// Fallback icons map by index to keep current UI vibe when no logo is set
 	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
 
-	function getPlan(org: Organization): string {
-		if (org.metadata && typeof org.metadata === 'object' && 'plan' in org.metadata) {
-			return String(org.metadata.plan);
+	// Track subscriptions for organizations
+	let subscriptions = $state<Record<string, any>>({});
+	let loadingSubscriptions = $state(false);
+
+	async function loadSubscriptions() {
+		if (orgs.length === 0) return;
+
+		loadingSubscriptions = true;
+		try {
+			for (const org of orgs) {
+				const subs = await authClient.subscription.list({
+					query: { referenceId: org.id }
+				});
+				const activeSub = subs.data?.find(
+					(sub) => sub.status === 'active' || sub.status === 'trialing'
+				);
+				if (activeSub) {
+					subscriptions[org.id] = activeSub;
+				}
+			}
+		} catch (error) {
+			console.error('Failed to load subscriptions:', error);
+		} finally {
+			loadingSubscriptions = false;
 		}
-		return '';
 	}
+
+	$effect(() => {
+		loadSubscriptions();
+	});
+
+	function getPlan(org: Organization): string {
+		const sub = subscriptions[org.id];
+		if (!sub) return 'Free';
+
+		const planName = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
+		if (sub.status === 'trialing') {
+			return `${planName} (Trial)`;
+		}
+		return planName;
+	}
+
 	const sidebar = useSidebar();
 	let showCreateOrgDialog = $state(false);
 
@@ -64,7 +100,8 @@
 						{#if activeOrganization}
 							{@const FallbackIcon =
 								fallbackLogos[
-									orgs.findIndex((o) => o.id === activeOrganization.id) % fallbackLogos.length
+									orgs.findIndex((o: Organization) => o.id === activeOrganization.id) %
+										fallbackLogos.length
 								]}
 							<div
 								class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
@@ -82,9 +119,11 @@
 							<span class="truncate font-medium">
 								{activeOrganization?.name ?? 'Select organization'}
 							</span>
-							<span class="truncate text-xs"
-								>{activeOrganization ? getPlan(activeOrganization) : ''}</span
-							>
+							<span class="truncate text-xs">
+								{#if activeOrganization}
+									{loadingSubscriptions ? 'Loading...' : getPlan(activeOrganization)}
+								{/if}
+							</span>
 						</div>
 						<ChevronsUpDownIcon class="ml-auto" />
 					</Sidebar.MenuButton>

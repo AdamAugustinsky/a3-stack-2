@@ -84,7 +84,7 @@
 						<UserCircleIcon />
 						Account
 					</DropdownMenu.Item>
-					<DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => goto('/organization/billing')}>
 						<CreditCardIcon />
 						Billing
 					</DropdownMenu.Item>
