@@ -11,7 +11,7 @@
 <Sidebar.Provider
 	style="--sidebar-width: calc(var(--spacing) * 72); --header-height: calc(var(--spacing) * 12);"
 >
-	<AppSidebar variant="inset" user={data.user} />
+	<AppSidebar variant="inset" user={data.user} organizations={data.organizations} />
 	<Sidebar.Inset>
 		<SiteHeader />
 		{@render children()}
