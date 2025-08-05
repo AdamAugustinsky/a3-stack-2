@@ -18,15 +18,18 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 				.post(
 					'/',
 					async ({ body }) =>
-						db.insert(todo).values({
-							text: body.text,
-							completed: !!body.completed,
-							priority: body.priority ?? 'medium',
-							status: body.status ?? 'todo',
-							label: body.label ?? 'feature',
-							createdAt: new Date(),
-							updatedAt: new Date()
-						}),
+						db
+							.insert(todo)
+							.values({
+								text: body.text,
+								completed: !!body.completed,
+								priority: body.priority ?? 'medium',
+								status: body.status ?? 'todo',
+								label: body.label ?? 'feature',
+								createdAt: new Date(),
+								updatedAt: new Date()
+							})
+							.returning(),
 					{
 						body: t.Object({
 							text: t.String(),
@@ -56,7 +59,8 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 						db
 							.update(todo)
 							.set({ completed: body.completed, updatedAt: new Date() })
-							.where(eq(todo.id, body.id)),
+							.where(eq(todo.id, body.id))
+							.returning(),
 					{
 						body: t.Object({
 							id: t.Number(),
@@ -71,7 +75,8 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 						db
 							.update(todo)
 							.set({ ...body, updatedAt: new Date() })
-							.where(eq(todo.id, Number(id))),
+							.where(eq(todo.id, Number(id)))
+							.returning(),
 					{
 						body: t.Object({
 							text: t.String(),
@@ -89,7 +94,10 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 				)
 
 				.delete('/:id', async ({ params: { id } }) =>
-					db.delete(todo).where(eq(todo.id, Number(id)))
+					db
+						.delete(todo)
+						.where(eq(todo.id, Number(id)))
+						.returning()
 				)
 
 				.patch(
@@ -98,7 +106,8 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 						db
 							.update(todo)
 							.set({ ...body.updates, updatedAt: new Date() })
-							.where(inArray(todo.id, body.ids)),
+							.where(inArray(todo.id, body.ids))
+							.returning(),
 					{
 						body: t.Object({
 							ids: t.Array(t.Number()),
@@ -123,11 +132,15 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 					}
 				)
 
-				.delete('/bulk', async ({ body }) => db.delete(todo).where(inArray(todo.id, body.ids)), {
-					body: t.Object({
-						ids: t.Array(t.Number())
-					})
-				})
+				.delete(
+					'/bulk',
+					async ({ body }) => db.delete(todo).where(inArray(todo.id, body.ids)).returning(),
+					{
+						body: t.Object({
+							ids: t.Array(t.Number())
+						})
+					}
+				)
 		)
 		.group('/dashboard', (app) =>
 			app

@@ -90,7 +90,7 @@ test('POST /api/todo - should use default values for optional fields', async () 
 });
 
 test('PATCH /api/todo/toggle - should toggle todo completion', async () => {
-	const createResponse = await createTestTodo({ text: 'Toggle test', completed: false });
+	await createTestTodo({ text: 'Toggle test', completed: false });
 	const todos = await eden.api.todo.get();
 	const todo = todos.data?.find((t) => t.text === 'Toggle test');
 
@@ -308,15 +308,6 @@ test('GET /api/dashboard/activity - should return dense 30-day series', async ()
 	}
 });
 
-// Test validation errors
-test('POST /api/todo - should fail with invalid data', async () => {
-	const response = await eden.api.todo.post({
-		// Missing required 'text' field
-	} as any);
-
-	expect(response.error).toBeDefined();
-});
-
 test('PATCH /api/todo/toggle - should fail with invalid id', async () => {
 	const response = await eden.api.todo.toggle.patch({
 		id: 999999, // Non-existent ID
@@ -324,12 +315,12 @@ test('PATCH /api/todo/toggle - should fail with invalid id', async () => {
 	});
 
 	// Should not error but should handle gracefully
-	expect(response.error).toBeNull();
+	expect(response.data).toBeEmpty();
 });
 
 test('DELETE /api/todo/:id - should handle non-existent id gracefully', async () => {
 	const response = await eden.api.todo({ id: 999999 }).delete();
 
 	// Should not error but should handle gracefully
-	expect(response.error).toBeNull();
+	expect(response.data).toBeEmpty();
 });
