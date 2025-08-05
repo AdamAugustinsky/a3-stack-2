@@ -5,13 +5,14 @@
 	import TodoDataTableViewOptions from './todo-data-table-view-options.svelte';
 	import TodoDataTableFacetedFilter from './todo-data-table-faceted-filter.svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { priorities, statuses } from './data.js';
+	import { priorities, statuses, labels } from './data.js';
 
 	let { table }: { table: Table<TData> } = $props();
 
 	const isFiltered = $derived(table.getState().columnFilters.length > 0);
 	const statusCol = $derived(table.getColumn('status'));
 	const priorityCol = $derived(table.getColumn('priority'));
+	const labelCol = $derived(table.getColumn('label'));
 </script>
 
 <div class="flex items-center justify-between">
@@ -33,6 +34,9 @@
 		{/if}
 		{#if priorityCol}
 			<TodoDataTableFacetedFilter column={priorityCol} title="Priority" options={priorities} />
+		{/if}
+		{#if labelCol}
+			<TodoDataTableFacetedFilter column={labelCol} title="Label" options={labels} />
 		{/if}
 
 		{#if isFiltered}

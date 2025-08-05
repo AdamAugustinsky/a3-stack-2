@@ -125,7 +125,24 @@
 		selectedTodos = [];
 		clearSelectionSignal++; // Trigger table to clear selection
 	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		// Only trigger if 'c' is pressed without modifiers and not typing in an input
+		if (e.key === 'c' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+			const target = e.target as HTMLElement;
+			if (
+				target.tagName !== 'INPUT' &&
+				target.tagName !== 'TEXTAREA' &&
+				!target.isContentEditable
+			) {
+				e.preventDefault();
+				handleOpenCreateDialog();
+			}
+		}
+	}
 </script>
+
+<svelte:document onkeydown={handleKeydown} />
 
 <div class="hidden h-full flex-1 flex-col gap-8 p-8 md:flex">
 	<div class="flex items-center justify-between gap-2">
@@ -133,9 +150,14 @@
 			<h2 class="text-2xl font-semibold tracking-tight">Todos!</h2>
 			<p class="text-muted-foreground">Here&apos;s a list of your tasks for this month.</p>
 		</div>
-		<Button onclick={handleOpenCreateDialog}>
+		<Button onclick={handleOpenCreateDialog} class="group">
 			<CirclePlusIcon class="mr-2 h-4 w-4" />
 			Add Task
+			<kbd
+				class="pointer-events-none inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none"
+			>
+				<span class="text-xs">c</span>
+			</kbd>
 		</Button>
 	</div>
 	{#if todosQuery.loading}

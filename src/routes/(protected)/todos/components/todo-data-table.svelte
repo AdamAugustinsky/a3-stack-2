@@ -40,6 +40,8 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { cn } from '$lib/utils.js';
 	import type { Task } from '@/schemas/todo';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	let {
 		data,
@@ -58,10 +60,83 @@
 	} = $props();
 
 	let rowSelection = $state<RowSelectionState>({});
-	let columnVisibility = $state<VisibilityState>({});
-	let columnFilters = $state<ColumnFiltersState>([]);
+	let columnVisibility = $state<VisibilityState>({
+		label: false // Hide label column by default since it appears in the title
+	});
 	let sorting = $state<SortingState>([]);
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+	// Create derived state for columnFilters from URL params
+	const columnFilters = $derived.by(() => {
+		const urlParams = page.url.searchParams;
+		const filters: ColumnFiltersState = [];
+
+		// Handle status filter (multiple values)
+		const statuses = urlParams.getAll('status');
+		if (statuses.length > 0) {
+			filters.push({ id: 'status', value: statuses });
+		}
+
+		// Handle priority filter (multiple values)
+		const priorities = urlParams.getAll('priority');
+		if (priorities.length > 0) {
+			filters.push({ id: 'priority', value: priorities });
+		}
+
+		// Handle text search
+		const search = urlParams.get('search');
+		if (search) {
+			filters.push({ id: 'text', value: search });
+		}
+
+		// Handle label filter (multiple values)
+		const labels = urlParams.getAll('label');
+		if (labels.length > 0) {
+			filters.push({ id: 'label', value: labels });
+		}
+
+		return filters;
+	});
+
+	// Function to update URL params when filters change
+	function updateUrlFromFilters(filters: ColumnFiltersState) {
+		const url = new URL(page.url);
+
+		// Clear existing filter params
+		url.searchParams.delete('status');
+		url.searchParams.delete('priority');
+		url.searchParams.delete('search');
+		url.searchParams.delete('label');
+
+		// Add current filters to URL
+		for (const filter of filters) {
+			if (filter.id === 'status' && Array.isArray(filter.value) && filter.value.length > 0) {
+				// Add multiple status values
+				for (const status of filter.value) {
+					url.searchParams.append('status', status);
+				}
+			} else if (
+				filter.id === 'priority' &&
+				Array.isArray(filter.value) &&
+				filter.value.length > 0
+			) {
+				// Add multiple priority values
+				for (const priority of filter.value) {
+					url.searchParams.append('priority', priority);
+				}
+			} else if (filter.id === 'label' && Array.isArray(filter.value) && filter.value.length > 0) {
+				// Add multiple label values
+				for (const label of filter.value) {
+					url.searchParams.append('label', label);
+				}
+			} else if (filter.id === 'text' && filter.value) {
+				url.searchParams.set('search', String(filter.value));
+			}
+		}
+
+		// Navigate to the new URL without triggering a page reload
+		goto(url.toString(), { replaceState: true, noScroll: true });
+	}
 
 	const columns: ColumnDef<Task>[] = [
 		{
@@ -130,6 +205,25 @@
 			}
 		},
 		{
+			accessorKey: 'label',
+			header: ({ column }) => {
+				return renderSnippet(ColumnHeader, {
+					title: 'Label',
+					column
+				});
+			},
+			cell: ({ row }) => {
+				return renderSnippet(LabelCell, {
+					value: row.original.label
+				});
+			},
+			filterFn: (row, id, value) => {
+				return value.includes(row.getValue(id));
+			},
+			enableSorting: false,
+			enableHiding: true
+		},
+		{
 			accessorKey: 'priority',
 			header: ({ column }) => {
 				return renderSnippet(ColumnHeader, {
@@ -190,11 +284,14 @@
 			}
 		},
 		onColumnFiltersChange: (updater) => {
+			// When filters change in the table, update the URL
+			let newFilters: ColumnFiltersState;
 			if (typeof updater === 'function') {
-				columnFilters = updater(columnFilters);
+				newFilters = updater(columnFilters);
 			} else {
-				columnFilters = updater;
+				newFilters = updater;
 			}
+			updateUrlFromFilters(newFilters);
 		},
 		onColumnVisibilityChange: (updater) => {
 			if (typeof updater === 'function') {
@@ -232,13 +329,28 @@
 			rowSelection = {};
 		}
 	});
+
+	// Handle highlight parameter (scroll to and highlight a specific todo)
+	$effect(() => {
+		const highlightId = page.url.searchParams.get('highlight');
+		if (highlightId) {
+			const todoIndex = data.findIndex((todo) => todo.id === parseInt(highlightId));
+			if (todoIndex !== -1) {
+				const pageIndex = Math.floor(todoIndex / pagination.pageSize);
+				if (pageIndex !== pagination.pageIndex) {
+					pagination = { ...pagination, pageIndex };
+				}
+			}
+		}
+	});
 </script>
 
 {#snippet StatusCell({ value }: { value: string })}
 	{@const status = statuses.find((status) => status.value === value)}
 	{#if status}
+		{@const Icon = status.icon}
 		<div class="flex w-[100px] items-center">
-			<status.icon class="mr-2 size-4 text-muted-foreground" />
+			<Icon class="mr-2 size-4 text-muted-foreground" />
 			<span>{status.label}</span>
 		</div>
 	{/if}
@@ -256,11 +368,19 @@
 	</div>
 {/snippet}
 
+{#snippet LabelCell({ value }: { value: string })}
+	{@const label = labels.find((label) => label.value === value)}
+	{#if label}
+		<Badge variant="outline">{label.label}</Badge>
+	{/if}
+{/snippet}
+
 {#snippet PriorityCell({ value }: { value: string })}
 	{@const priority = priorities.find((priority) => priority.value === value)}
 	{#if priority}
+		{@const Icon = priority.icon}
 		<div class="flex items-center">
-			<priority.icon class="mr-2 size-4 text-muted-foreground" />
+			<Icon class="mr-2 size-4 text-muted-foreground" />
 			<span>{priority.label}</span>
 		</div>
 	{/if}
