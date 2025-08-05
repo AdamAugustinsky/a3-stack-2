@@ -145,37 +145,29 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 		.group('/dashboard', (app) =>
 			app
 				.get('/stats', async () => {
-					const totalTodos = await db.select({ count: count() }).from(todo);
-
-					const todosByStatus = await db
-						.select({ status: todo.status, count: count() })
-						.from(todo)
-						.groupBy(todo.status);
-
-					const todosByPriority = await db
-						.select({ priority: todo.priority, count: count() })
-						.from(todo)
-						.groupBy(todo.priority);
-
-					const todosByLabel = await db
-						.select({ label: todo.label, count: count() })
-						.from(todo)
-						.groupBy(todo.label);
-
-					const completedTodos = await db
-						.select({ count: count() })
-						.from(todo)
-						.where(eq(todo.status, 'done'));
-
-					const inProgressTodos = await db
-						.select({ count: count() })
-						.from(todo)
-						.where(eq(todo.status, 'in progress'));
-
-					const highPriorityTodos = await db
-						.select({ count: count() })
-						.from(todo)
-						.where(and(eq(todo.priority, 'high'), eq(todo.status, 'todo')));
+					const [
+						totalTodos,
+						todosByStatus,
+						todosByPriority,
+						todosByLabel,
+						completedTodos,
+						inProgressTodos,
+						highPriorityTodos
+					] = await Promise.all([
+						db.select({ count: count() }).from(todo),
+						db.select({ status: todo.status, count: count() }).from(todo).groupBy(todo.status),
+						db
+							.select({ priority: todo.priority, count: count() })
+							.from(todo)
+							.groupBy(todo.priority),
+						db.select({ label: todo.label, count: count() }).from(todo).groupBy(todo.label),
+						db.select({ count: count() }).from(todo).where(eq(todo.status, 'done')),
+						db.select({ count: count() }).from(todo).where(eq(todo.status, 'in progress')),
+						db
+							.select({ count: count() })
+							.from(todo)
+							.where(and(eq(todo.priority, 'high'), eq(todo.status, 'todo')))
+					]);
 
 					const totalCount = Number(totalTodos[0]?.count) || 0;
 					const completedCount = Number(completedTodos[0]?.count) || 0;
@@ -224,19 +216,20 @@ export const createElysiaApp = (db: GenericPostgresDrizzle) =>
 						dayMap.set(keyOf(d), { date: d, created: 0, completed: 0, inProgress: 0, total: 0 });
 					}
 
-					const createdActivity = await db
-						.select({ date: todo.createdAt, status: todo.status, count: count() })
-						.from(todo)
-						.where(gte(todo.createdAt, start))
-						.groupBy(todo.createdAt, todo.status)
-						.orderBy(todo.createdAt);
-
-					const updatedActivity = await db
-						.select({ date: todo.updatedAt, status: todo.status, count: count() })
-						.from(todo)
-						.where(gte(todo.updatedAt, start))
-						.groupBy(todo.updatedAt, todo.status)
-						.orderBy(todo.updatedAt);
+					const [createdActivity, updatedActivity] = await Promise.all([
+						db
+							.select({ date: todo.createdAt, status: todo.status, count: count() })
+							.from(todo)
+							.where(gte(todo.createdAt, start))
+							.groupBy(todo.createdAt, todo.status)
+							.orderBy(todo.createdAt),
+						db
+							.select({ date: todo.updatedAt, status: todo.status, count: count() })
+							.from(todo)
+							.where(gte(todo.updatedAt, start))
+							.groupBy(todo.updatedAt, todo.status)
+							.orderBy(todo.updatedAt)
+					]);
 
 					for (const item of createdActivity) {
 						if (!item.date) continue;
