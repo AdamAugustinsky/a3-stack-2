@@ -45,12 +45,17 @@
 		type?: 'navigation' | 'todo' | 'action';
 	};
 
-	const navigationCommands: CommandItem[] = [
+	// Detect if Mac for keyboard shortcuts
+	const isMac = $derived(
+		typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
+	);
+
+	const navigationCommands: CommandItem[] = $derived([
 		{
 			id: 'nav-dashboard',
 			label: 'Dashboard',
 			icon: LayoutDashboard,
-			shortcut: '⌘D',
+			shortcut: isMac ? '⌘D' : 'Ctrl+D',
 			action: () => navigateTo('/dashboard'),
 			keywords: ['home', 'overview', 'stats'],
 			type: 'navigation'
@@ -59,7 +64,7 @@
 			id: 'nav-todos',
 			label: 'Todos',
 			icon: CheckSquare,
-			shortcut: '⌘T',
+			shortcut: isMac ? '⌘T' : 'Ctrl+T',
 			action: () => navigateTo('/todos'),
 			keywords: ['tasks', 'list'],
 			type: 'navigation'
@@ -68,7 +73,7 @@
 			id: 'nav-account',
 			label: 'Account',
 			icon: User,
-			shortcut: '⌘U',
+			shortcut: isMac ? '⌘U' : 'Ctrl+U',
 			action: () => navigateTo('/account'),
 			keywords: ['profile', 'settings', 'user'],
 			type: 'navigation'
@@ -89,7 +94,7 @@
 			keywords: ['payment', 'subscription', 'invoice'],
 			type: 'navigation'
 		}
-	];
+	]);
 
 	const todoCommands: CommandItem[] = [
 		{
@@ -191,7 +196,7 @@
 		}
 	];
 
-	const quickActions: CommandItem[] = [
+	const quickActions: CommandItem[] = $derived([
 		{
 			id: 'action-signout',
 			label: 'Sign Out',
@@ -204,7 +209,7 @@
 			id: 'action-refresh',
 			label: 'Refresh Data',
 			icon: RefreshCw,
-			shortcut: '⌘R',
+			shortcut: isMac ? '⌘R' : 'Ctrl+R',
 			action: () => refreshData(),
 			keywords: ['reload', 'update'],
 			type: 'action'
@@ -226,7 +231,7 @@
 			keywords: ['help', 'hotkeys'],
 			type: 'action'
 		}
-	];
+	]);
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -332,9 +337,10 @@
 	}
 
 	function showKeyboardShortcuts() {
+		const modKey = isMac ? '⌘' : 'Ctrl+';
 		alert(`Keyboard Shortcuts:
 
-⌘K - Open Command Palette
+${modKey}K - Open Command Palette
 
 On Todos page:
 C - Create New Todo (when not typing)
@@ -342,10 +348,10 @@ C - Create New Todo (when not typing)
 When Command Palette is open:
 Ctrl+N - Navigate down
 Ctrl+P - Navigate up
-⌘D - Go to Dashboard
-⌘T - Go to Todos
-⌘U - Go to Account
-⌘R - Refresh Data
+${modKey}D - Go to Dashboard
+${modKey}T - Go to Todos
+${modKey}U - Go to Account
+${modKey}R - Refresh Data
 ? - Show this help`);
 	}
 
@@ -389,11 +395,6 @@ Ctrl+P - Navigate up
 				cmd.keywords?.some((keyword) => keyword.toLowerCase().includes(lowerQuery))
 		);
 	}
-
-	// Detect if Mac for keyboard shortcuts
-	const isMac = $derived(
-		typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
-	);
 
 	// Get the action text for the highlighted command
 	const footerActionText = $derived.by(() => {
