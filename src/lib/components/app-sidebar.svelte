@@ -193,22 +193,27 @@
 						<Sidebar.MenuButton
 							tooltipContent="Search (${isMac ? '⌘' : 'Ctrl+'}K)"
 							onclick={() => (showCommandPalette = true)}
-							class="relative bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground ring-1 ring-neutral-200/50 dark:ring-neutral-700/50 shadow-sm"
+							class="relative bg-muted/50 text-muted-foreground shadow-sm ring-1 ring-neutral-200/50 hover:bg-muted hover:text-foreground dark:ring-neutral-700/50"
 						>
 							<SearchIcon2 class="size-4" />
 							<span class="flex-1 text-left">Search...</span>
 							<div class="ml-auto flex gap-0.5">
-								<Kbd content={isMac ? '⌘' : 'Ctrl'} class="h-4 bg-background/80 text-[0.65rem] border-neutral-200/50 dark:border-neutral-700/50" />
-								<Kbd content="K" class="h-4 bg-background/80 text-[0.65rem] border-neutral-200/50 dark:border-neutral-700/50" />
+								<Kbd
+									content={isMac ? '⌘' : 'Ctrl'}
+									class="h-4 border-neutral-200/50 bg-background/80 text-[0.65rem] dark:border-neutral-700/50"
+								/>
+								<Kbd
+									content="K"
+									class="h-4 border-neutral-200/50 bg-background/80 text-[0.65rem] dark:border-neutral-700/50"
+								/>
 							</div>
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
-		<div class="mb-2" />
 		<NavMain items={data.navMain} />
-		<NavSecondary items={data.navSecondary} class="mt-auto" />
+		<!-- <NavSecondary items={data.navSecondary} class="mt-auto" /> -->
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<NavUser {user} />

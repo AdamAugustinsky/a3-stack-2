@@ -151,11 +151,14 @@
 			<h2 class="text-2xl font-semibold tracking-tight">Todos!</h2>
 			<p class="text-muted-foreground">Here&apos;s a list of your tasks for this month.</p>
 		</div>
-		<Button onclick={handleOpenCreateDialog} class="group">
+		<Button 
+			onclick={handleOpenCreateDialog} 
+			class="group bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+		>
 			<CirclePlusIcon class="mr-2 h-4 w-4" />
 			Add Task
-			<Kbd class="ml-1.5 bg-muted">
-				<span class="text-xs">C</span>
+			<Kbd class="ml-1.5 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
+				<span class="text-xs font-semibold">C</span>
 			</Kbd>
 		</Button>
 	</div>
