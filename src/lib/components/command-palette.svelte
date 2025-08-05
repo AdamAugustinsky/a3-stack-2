@@ -27,6 +27,8 @@
 	import CreateTodoDialog from '@routes/(protected)/todos/components/create-todo-dialog.svelte';
 	import type { Task } from '$lib/schemas/todo';
 	import type { Component } from 'svelte';
+	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
+	import Kbd from '$lib/components/kbd.svelte';
 
 	let open = $state(false);
 	let search = $state('');
@@ -46,9 +48,7 @@
 	};
 
 	// Detect if Mac for keyboard shortcuts
-	const isMac = $derived(
-		typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
-	);
+	const isMac = useIsMac();
 
 	const navigationCommands: CommandItem[] = $derived([
 		{
@@ -255,7 +255,7 @@
 				// Navigate up in command palette (handled by Command component)
 				return;
 			}
-			
+
 			// Command shortcuts
 			if (e.key === 'd' && (e.metaKey || e.ctrlKey)) {
 				e.preventDefault();
@@ -399,7 +399,7 @@ ${modKey}R - Refresh Data
 	// Get the action text for the highlighted command
 	const footerActionText = $derived.by(() => {
 		if (!highlightedCommand) return '';
-		
+
 		if (highlightedCommand.type === 'navigation') {
 			return 'Go to Page';
 		} else if (highlightedCommand.type === 'todo') {
@@ -410,21 +410,6 @@ ${modKey}R - Refresh Data
 	});
 </script>
 
-{#snippet CommandMenuKbd({ content, class: className }: { content: string | Component; class?: string })}
-	{@const Content = content}
-	<kbd
-		class={cn(
-			'pointer-events-none flex h-5 select-none items-center justify-center gap-1 rounded border bg-background px-1 font-sans text-[0.7rem] font-medium text-muted-foreground [&_svg:not([class*="size-"])]:size-3',
-			className
-		)}
-	>
-		{#if typeof Content === 'string'}
-			{Content}
-		{:else}
-			<Content />
-		{/if}
-	</kbd>
-{/snippet}
 
 <svelte:document onkeydown={handleKeydown} />
 
@@ -438,10 +423,10 @@ ${modKey}R - Refresh Data
 			<Dialog.Description>Search for commands and actions</Dialog.Description>
 		</Dialog.Header>
 		<Command.Root
-			class="rounded-none bg-transparent **:data-[slot=command-input-wrapper]:mb-0 **:data-[slot=command-input-wrapper]:!h-9 **:data-[slot=command-input-wrapper]:rounded-md **:data-[slot=command-input-wrapper]:border **:data-[slot=command-input-wrapper]:border-input **:data-[slot=command-input-wrapper]:bg-input/50 **:data-[slot=command-input]:!h-9 **:data-[slot=command-input]:py-0"
+			class="rounded-none bg-transparent **:data-[slot=command-input]:!h-9 **:data-[slot=command-input]:py-0 **:data-[slot=command-input-wrapper]:mb-0 **:data-[slot=command-input-wrapper]:!h-9 **:data-[slot=command-input-wrapper]:rounded-md **:data-[slot=command-input-wrapper]:border **:data-[slot=command-input-wrapper]:border-input **:data-[slot=command-input-wrapper]:bg-input/50"
 		>
 			<Command.Input placeholder="Type a command or search..." bind:value={search} />
-			<Command.List class="no-scrollbar min-h-80 scroll-pb-1.5 scroll-pt-2">
+			<Command.List class="no-scrollbar min-h-80 scroll-pt-2 scroll-pb-1.5">
 				<Command.Empty class="py-12 text-center text-sm text-muted-foreground">
 					No results found.
 				</Command.Empty>
@@ -454,7 +439,7 @@ ${modKey}R - Refresh Data
 						{#each searchedTodos as todo (todo.id)}
 							<Command.Item
 								onSelect={() => navigateTo(`/todos?highlight=${todo.id}`)}
-								class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 							>
 								<CheckSquare class="size-4" />
 								<span class="truncate">{todo.text}</span>
@@ -482,7 +467,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
 									<Icon class="size-4" />
@@ -505,7 +490,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
 									<Icon class="size-4" />
@@ -528,7 +513,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									<ArrowRight class="size-4" />
 									<span>{command.label}</span>
@@ -549,7 +534,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									<ArrowRight class="size-4" />
 									<span>{command.label}</span>
@@ -571,7 +556,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
 									<Icon class="size-4" />
@@ -594,7 +579,7 @@ ${modKey}R - Refresh Data
 								<Command.Item
 									onSelect={() => executeCommand(command.id)}
 									onHighlight={() => (highlightedCommand = command)}
-									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
 									<Icon class="size-4" />
@@ -613,7 +598,7 @@ ${modKey}R - Refresh Data
 			class="absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-b-xl border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium text-muted-foreground dark:border-t-neutral-700 dark:bg-neutral-800"
 		>
 			<div class="flex items-center gap-2">
-				{@render CommandMenuKbd({ content: CornerDownLeft })}
+				<Kbd content={CornerDownLeft} />
 				{#if footerActionText}
 					{footerActionText}
 				{:else}
@@ -622,8 +607,8 @@ ${modKey}R - Refresh Data
 			</div>
 			<Separator orientation="vertical" class="!h-4" />
 			<div class="flex items-center gap-1">
-				{@render CommandMenuKbd({ content: isMac ? '⌘' : 'Ctrl' })}
-				{@render CommandMenuKbd({ content: 'K', class: 'aspect-square' })}
+				<Kbd content={isMac ? '⌘' : 'Ctrl'} />
+				<Kbd content="K" class="aspect-square" />
 				Command Palette
 			</div>
 			{#if highlightedCommand?.shortcut}
