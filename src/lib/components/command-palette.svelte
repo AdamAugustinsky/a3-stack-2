@@ -26,11 +26,10 @@
 	import { getTodos } from '@routes/(protected)/todos/todo.remote';
 	import CreateTodoDialog from '@routes/(protected)/todos/components/create-todo-dialog.svelte';
 	import type { Task } from '$lib/schemas/todo';
-	import type { Component } from 'svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import Kbd from '$lib/components/kbd.svelte';
 
-	let open = $state(false);
+	let { open = $bindable(false) } = $props();
 	let search = $state('');
 	let showCreateTodoDialog = $state(false);
 	let searchedTodos = $state<Task[]>([]);
@@ -234,15 +233,6 @@
 	]);
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-			e.preventDefault();
-			open = !open;
-			if (open) {
-				search = '';
-				searchedTodos = [];
-			}
-		}
-
 		if (open) {
 			// Navigation shortcuts for command palette
 			if (e.key === 'n' && e.ctrlKey) {
@@ -408,15 +398,23 @@ ${modKey}R - Refresh Data
 			return 'Run Command';
 		}
 	});
+
+	// Reset search when dialog opens
+	$effect(() => {
+		if (open) {
+			search = '';
+			searchedTodos = [];
+			highlightedCommand = null;
+		}
+	});
 </script>
 
-
-<svelte:document onkeydown={handleKeydown} />
 
 <Dialog.Root bind:open>
 	<Dialog.Content
 		showCloseButton={false}
 		class="rounded-xl border-none bg-clip-padding p-2 pb-11 shadow-2xl ring-4 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-800"
+		onkeydown={handleKeydown}
 	>
 		<Dialog.Header class="sr-only">
 			<Dialog.Title>Command Palette</Dialog.Title>

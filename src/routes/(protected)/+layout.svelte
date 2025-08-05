@@ -2,7 +2,6 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
-	import CommandPalette from '$lib/components/command-palette.svelte';
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 
@@ -17,5 +16,4 @@
 		<SiteHeader />
 		{@render children()}
 	</Sidebar.Inset>
-	<CommandPalette />
 </Sidebar.Provider>

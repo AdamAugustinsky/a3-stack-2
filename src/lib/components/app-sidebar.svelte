@@ -20,6 +20,10 @@
 	import OrgSwitcher from './org-switcher.svelte';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
 	import { authClient } from '$lib/auth-client';
+	import CommandPalette from './command-palette.svelte';
+	import SearchIcon2 from '@lucide/svelte/icons/search';
+	import Kbd from '$lib/components/kbd.svelte';
+	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 
 	type Organization = {
 		id: string;
@@ -48,6 +52,18 @@
 
 	// Dialog state
 	let showCreateOrgDialog = $state(false);
+	let showCommandPalette = $state(false);
+
+	// Platform detection for keyboard shortcuts
+	const isMac = useIsMac();
+
+	// Handle keyboard shortcut to open command palette
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+			e.preventDefault();
+			showCommandPalette = true;
+		}
+	}
 
 	// If there are no organizations from the server, prompt creation dialog
 	if (organizations.length === 0) {
@@ -157,6 +173,8 @@
 	};
 </script>
 
+<svelte:document onkeydown={handleKeydown} />
+
 <Sidebar.Root collapsible="offcanvas" {...restProps}>
 	<Sidebar.Header>
 		{#if organizations.length === 0}
@@ -168,6 +186,27 @@
 		{/if}
 	</Sidebar.Header>
 	<Sidebar.Content>
+		<Sidebar.Group>
+			<Sidebar.GroupContent class="px-2">
+				<Sidebar.Menu>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton
+							tooltipContent="Search (${isMac ? '⌘' : 'Ctrl+'}K)"
+							onclick={() => (showCommandPalette = true)}
+							class="relative bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground ring-1 ring-neutral-200/50 dark:ring-neutral-700/50 shadow-sm"
+						>
+							<SearchIcon2 class="size-4" />
+							<span class="flex-1 text-left">Search...</span>
+							<div class="ml-auto flex gap-0.5">
+								<Kbd content={isMac ? '⌘' : 'Ctrl'} class="h-4 bg-background/80 text-[0.65rem] border-neutral-200/50 dark:border-neutral-700/50" />
+								<Kbd content="K" class="h-4 bg-background/80 text-[0.65rem] border-neutral-200/50 dark:border-neutral-700/50" />
+							</div>
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.GroupContent>
+		</Sidebar.Group>
+		<div class="mb-2" />
 		<NavMain items={data.navMain} />
 		<NavSecondary items={data.navSecondary} class="mt-auto" />
 	</Sidebar.Content>
@@ -177,3 +216,4 @@
 </Sidebar.Root>
 
 <CreateOrganizationDialog bind:open={showCreateOrgDialog} />
+<CommandPalette bind:open={showCommandPalette} />
