@@ -6,7 +6,7 @@
 	import { authClient } from '$lib/auth-client';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 
-	let { open = $bindable(false), onSuccess }: { open?: boolean; onSuccess?: () => void } = $props();
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	let errorValue = $state<string | undefined>();
 	let loading = $state(false);
@@ -55,7 +55,6 @@
 						slug: slugValue
 					});
 					open = false;
-					onSuccess?.();
 				} catch (error) {
 					if (error instanceof Error) {
 						errorValue = error.message;

@@ -6,6 +6,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
 	import { authClient } from '$lib/auth-client';
+	import { page } from '$app/state';
 
 	type Organization = {
 		id: string;
@@ -16,22 +17,19 @@
 	};
 
 	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
+	import type { Subscription } from '@better-auth/stripe';
+	import { goto } from '$app/navigation';
 
-	let {
-		orgs = [],
-		activeOrganization = null,
-		onOrganizationChange
-	} = $props<{
+	let { orgs = [], activeOrganization = null } = $props<{
 		orgs: Organization[];
 		activeOrganization: Organization | null;
-		onOrganizationChange?: () => void;
 	}>();
 
 	// Fallback icons map by index to keep current UI vibe when no logo is set
 	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
 
 	// Track subscriptions for organizations
-	let subscriptions = $state<Record<string, any>>({});
+	let subscriptions = $state<Record<string, Subscription>>({});
 	let loadingSubscriptions = $state(false);
 
 	async function loadSubscriptions() {
@@ -76,14 +74,11 @@
 	let showCreateOrgDialog = $state(false);
 
 	async function handleSelect(org: Organization) {
-		try {
-			await authClient.organization.setActive({
-				organizationId: org.id
+		if (page.params.organization_slug && org.slug)
+			goto(page.url.pathname.replace(page.params.organization_slug, org.slug), {
+				replaceState: true,
+				noScroll: true
 			});
-			onOrganizationChange?.();
-		} catch (e) {
-			console.error('Failed to set active organization', e);
-		}
 	}
 </script>
 
@@ -158,4 +153,4 @@
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<CreateOrganizationDialog bind:open={showCreateOrgDialog} onSuccess={onOrganizationChange} />
+<CreateOrganizationDialog bind:open={showCreateOrgDialog} />

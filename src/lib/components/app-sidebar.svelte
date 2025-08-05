@@ -15,7 +15,6 @@
 	import type { User } from 'better-auth';
 	import type { ComponentProps } from 'svelte';
 	import NavMain from './nav-main.svelte';
-	import NavSecondary from './nav-secondary.svelte';
 	import NavUser from './nav-user.svelte';
 	import OrgSwitcher from './org-switcher.svelte';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';

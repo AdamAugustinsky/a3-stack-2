@@ -4,7 +4,6 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { cn } from '$lib/utils.js';
 	import {
 		LayoutDashboard,
 		CheckSquare,
@@ -23,11 +22,12 @@
 		CornerDownLeft,
 		ArrowRight
 	} from '@lucide/svelte';
-	import { getTodos } from '@routes/(protected)/todos/todo.remote';
-	import CreateTodoDialog from '@routes/(protected)/todos/components/create-todo-dialog.svelte';
+	import { getTodos } from '@routes/(protected)/[organization_slug]/todos/todo.remote';
+	import CreateTodoDialog from '@routes/(protected)/[organization_slug]/todos/components/create-todo-dialog.svelte';
 	import type { Task } from '$lib/schemas/todo';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import Kbd from '$lib/components/kbd.svelte';
+	import { navigateTo } from '@/client.utils.svelte';
 
 	let { open = $bindable(false) } = $props();
 	let search = $state('');
@@ -55,7 +55,7 @@
 			label: 'Dashboard',
 			icon: LayoutDashboard,
 			shortcut: isMac ? '⌘D' : 'Ctrl+D',
-			action: () => navigateTo('/dashboard'),
+			action: () => navigateTo('dashboard'),
 			keywords: ['home', 'overview', 'stats'],
 			type: 'navigation'
 		},
@@ -275,10 +275,6 @@
 		}
 	}
 
-	function navigateTo(path: string) {
-		goto(path);
-	}
-
 	function openCreateTodoDialog() {
 		showCreateTodoDialog = true;
 	}
@@ -408,7 +404,6 @@ ${modKey}R - Refresh Data
 		}
 	});
 </script>
-
 
 <Dialog.Root bind:open>
 	<Dialog.Content

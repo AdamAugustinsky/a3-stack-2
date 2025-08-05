@@ -30,28 +30,24 @@
 	import MailIcon from '@tabler/icons-svelte/icons/mail';
 	import TrashIcon from '@tabler/icons-svelte/icons/trash';
 	import SendIcon from '@tabler/icons-svelte/icons/send';
-	import RefreshIcon from '@tabler/icons-svelte/icons/refresh';
 	import XIcon from '@tabler/icons-svelte/icons/x';
 	import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
 	import CheckIcon from '@tabler/icons-svelte/icons/check';
 	import CrownIcon from '@tabler/icons-svelte/icons/crown';
 	import UserPlusIcon from '@tabler/icons-svelte/icons/user-plus';
-	import LogoutIcon from '@tabler/icons-svelte/icons/logout';
 	import { authClient } from '$lib/auth-client';
 	import {
 		getFullOrganization,
 		updateOrganization,
 		deleteOrganization,
-		listMembers,
 		listInvitations,
 		inviteMember,
 		updateMemberRole,
 		removeMember,
 		cancelInvitation,
 		setActiveOrganization
-	} from '../../../organization.remote';
+	} from '../organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
 
 	// Reactive organization data
 	const activeOrganization = authClient.useActiveOrganization();
@@ -276,7 +272,7 @@
 			await deleteOrganization({
 				organizationId: organizationDetails.id
 			});
-			
+
 			// Clear active organization and redirect
 			await setActiveOrganization({ organizationId: null });
 			await invalidateAll();
@@ -429,7 +425,9 @@
 								</p>
 							{:else}
 								<div class="flex items-center space-x-2 py-1">
-									<span class="truncate text-sm font-mono">/{organizationDetails.slug || 'no-slug'}</span>
+									<span class="truncate font-mono text-sm"
+										>/{organizationDetails.slug || 'no-slug'}</span
+									>
 								</div>
 							{/if}
 						</div>
@@ -444,7 +442,9 @@
 									placeholder="https://example.com/logo.png"
 									disabled={isSaving}
 								/>
-								<p class="text-xs text-muted-foreground">Provide a URL to your organization's logo.</p>
+								<p class="text-xs text-muted-foreground">
+									Provide a URL to your organization's logo.
+								</p>
 							{:else if organizationDetails.logo}
 								<div class="flex items-center space-x-2 py-1">
 									<span class="truncate text-sm">{organizationDetails.logo}</span>
@@ -512,8 +512,9 @@
 								<UsersIcon class="size-4 shrink-0 text-muted-foreground" />
 								<span class="text-sm font-medium">Members</span>
 							</div>
-							<span class="text-sm whitespace-nowrap font-medium">
-								{members.length} {members.length === 1 ? 'member' : 'members'}
+							<span class="text-sm font-medium whitespace-nowrap">
+								{members.length}
+								{members.length === 1 ? 'member' : 'members'}
 							</span>
 						</div>
 
@@ -613,7 +614,7 @@
 											<select
 												value={member.role}
 												onchange={(e) => handleUpdateMemberRole(member.id, e.currentTarget.value)}
-												class="flex h-8 w-[100px] items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+												class="flex h-8 w-[100px] items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
 											>
 												<option value="member">Member</option>
 												<option value="admin">Admin</option>
@@ -740,7 +741,7 @@
 					id="role"
 					bind:value={inviteRole}
 					disabled={isInviting}
-					class="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+					class="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					<option value="member">Member</option>
 					<option value="admin">Admin</option>
@@ -779,7 +780,10 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={handleDeleteOrganization} class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+			<AlertDialog.Action
+				onclick={handleDeleteOrganization}
+				class="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+			>
 				Delete Organization
 			</AlertDialog.Action>
 		</AlertDialog.Footer>

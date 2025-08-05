@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { Icon } from '@tabler/icons-svelte';
 
@@ -12,7 +13,7 @@
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton tooltipContent={item.title}>
 						{#snippet child({ props })}
-							<a href={item.url} {...props}>
+							<a href={'/' + page.params.organization_slug + item.url} {...props}>
 								{#if item.icon}
 									<item.icon />
 								{/if}
