@@ -2,6 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Command from '$lib/components/ui/command/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { cn } from '$lib/utils.js';
 	import {
 		LayoutDashboard,
 		CheckSquare,
@@ -16,16 +19,20 @@
 		RefreshCw,
 		Copy,
 		Keyboard,
-		Filter
+		Filter,
+		CornerDownLeft,
+		ArrowRight
 	} from '@lucide/svelte';
 	import { getTodos } from '@routes/(protected)/todos/todo.remote';
 	import CreateTodoDialog from '@routes/(protected)/todos/components/create-todo-dialog.svelte';
 	import type { Task } from '$lib/schemas/todo';
+	import type { Component } from 'svelte';
 
 	let open = $state(false);
 	let search = $state('');
 	let showCreateTodoDialog = $state(false);
 	let searchedTodos = $state<Task[]>([]);
+	let highlightedCommand = $state<CommandItem | null>(null);
 
 	type CommandItem = {
 		id: string;
@@ -35,6 +42,7 @@
 		shortcut?: string;
 		action: () => void | Promise<void>;
 		keywords?: string[];
+		type?: 'navigation' | 'todo' | 'action';
 	};
 
 	const navigationCommands: CommandItem[] = [
@@ -44,7 +52,8 @@
 			icon: LayoutDashboard,
 			shortcut: '⌘D',
 			action: () => navigateTo('/dashboard'),
-			keywords: ['home', 'overview', 'stats']
+			keywords: ['home', 'overview', 'stats'],
+			type: 'navigation'
 		},
 		{
 			id: 'nav-todos',
@@ -52,7 +61,8 @@
 			icon: CheckSquare,
 			shortcut: '⌘T',
 			action: () => navigateTo('/todos'),
-			keywords: ['tasks', 'list']
+			keywords: ['tasks', 'list'],
+			type: 'navigation'
 		},
 		{
 			id: 'nav-account',
@@ -60,21 +70,24 @@
 			icon: User,
 			shortcut: '⌘U',
 			action: () => navigateTo('/account'),
-			keywords: ['profile', 'settings', 'user']
+			keywords: ['profile', 'settings', 'user'],
+			type: 'navigation'
 		},
 		{
 			id: 'nav-organization',
 			label: 'Organization',
 			icon: Building,
 			action: () => navigateTo('/organization'),
-			keywords: ['company', 'team']
+			keywords: ['company', 'team'],
+			type: 'navigation'
 		},
 		{
 			id: 'nav-billing',
 			label: 'Billing',
 			icon: CreditCard,
 			action: () => navigateTo('/organization/billing'),
-			keywords: ['payment', 'subscription', 'invoice']
+			keywords: ['payment', 'subscription', 'invoice'],
+			type: 'navigation'
 		}
 	];
 
@@ -85,84 +98,96 @@
 			icon: Plus,
 			shortcut: 'C',
 			action: () => openCreateTodoDialog(),
-			keywords: ['add', 'new', 'task']
+			keywords: ['add', 'new', 'task'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-search',
 			label: 'Search Todos',
 			icon: Search,
 			action: () => searchTodos(),
-			keywords: ['find', 'filter']
+			keywords: ['find', 'filter'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-filter-backlog',
 			label: 'Filter: Backlog',
 			icon: Filter,
 			action: () => filterTodosByStatus('backlog'),
-			keywords: ['status']
+			keywords: ['status'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-filter-todo',
 			label: 'Filter: Todo',
 			icon: Filter,
 			action: () => filterTodosByStatus('todo'),
-			keywords: ['status']
+			keywords: ['status'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-filter-progress',
 			label: 'Filter: In Progress',
 			icon: Filter,
 			action: () => filterTodosByStatus('in progress'),
-			keywords: ['status', 'active']
+			keywords: ['status', 'active'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-filter-done',
 			label: 'Filter: Done',
 			icon: Filter,
 			action: () => filterTodosByStatus('done'),
-			keywords: ['status', 'complete', 'finished']
+			keywords: ['status', 'complete', 'finished'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-priority-high',
 			label: 'Filter: High Priority',
 			icon: Flag,
 			action: () => filterTodosByPriority('high'),
-			keywords: ['urgent', 'important']
+			keywords: ['urgent', 'important'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-priority-medium',
 			label: 'Filter: Medium Priority',
 			icon: Flag,
 			action: () => filterTodosByPriority('medium'),
-			keywords: ['normal']
+			keywords: ['normal'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-priority-low',
 			label: 'Filter: Low Priority',
 			icon: Flag,
 			action: () => filterTodosByPriority('low'),
-			keywords: ['minor']
+			keywords: ['minor'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-label-bug',
 			label: 'Filter: Bugs',
 			icon: Tag,
 			action: () => filterTodosByLabel('bug'),
-			keywords: ['issue', 'problem']
+			keywords: ['issue', 'problem'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-label-feature',
 			label: 'Filter: Features',
 			icon: Tag,
 			action: () => filterTodosByLabel('feature'),
-			keywords: ['enhancement', 'new']
+			keywords: ['enhancement', 'new'],
+			type: 'todo'
 		},
 		{
 			id: 'todo-label-documentation',
 			label: 'Filter: Documentation',
 			icon: Tag,
 			action: () => filterTodosByLabel('documentation'),
-			keywords: ['docs', 'readme']
+			keywords: ['docs', 'readme'],
+			type: 'todo'
 		}
 	];
 
@@ -172,7 +197,8 @@
 			label: 'Sign Out',
 			icon: LogOut,
 			action: () => signOut(),
-			keywords: ['logout', 'exit']
+			keywords: ['logout', 'exit'],
+			type: 'action'
 		},
 		{
 			id: 'action-refresh',
@@ -180,14 +206,16 @@
 			icon: RefreshCw,
 			shortcut: '⌘R',
 			action: () => refreshData(),
-			keywords: ['reload', 'update']
+			keywords: ['reload', 'update'],
+			type: 'action'
 		},
 		{
 			id: 'action-copy-id',
 			label: 'Copy User ID',
 			icon: Copy,
 			action: () => copyUserId(),
-			keywords: ['clipboard']
+			keywords: ['clipboard'],
+			type: 'action'
 		},
 		{
 			id: 'action-shortcuts',
@@ -195,7 +223,8 @@
 			icon: Keyboard,
 			shortcut: '?',
 			action: () => showKeyboardShortcuts(),
-			keywords: ['help', 'hotkeys']
+			keywords: ['help', 'hotkeys'],
+			type: 'action'
 		}
 	];
 
@@ -360,131 +389,250 @@ Ctrl+P - Navigate up
 				cmd.keywords?.some((keyword) => keyword.toLowerCase().includes(lowerQuery))
 		);
 	}
+
+	// Detect if Mac for keyboard shortcuts
+	const isMac = $derived(
+		typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0
+	);
+
+	// Get the action text for the highlighted command
+	const footerActionText = $derived.by(() => {
+		if (!highlightedCommand) return '';
+		
+		if (highlightedCommand.type === 'navigation') {
+			return 'Go to Page';
+		} else if (highlightedCommand.type === 'todo') {
+			return 'Execute Action';
+		} else {
+			return 'Run Command';
+		}
+	});
 </script>
+
+{#snippet CommandMenuKbd({ content, class: className }: { content: string | Component; class?: string })}
+	{@const Content = content}
+	<kbd
+		class={cn(
+			'pointer-events-none flex h-5 select-none items-center justify-center gap-1 rounded border bg-background px-1 font-sans text-[0.7rem] font-medium text-muted-foreground [&_svg:not([class*="size-"])]:size-3',
+			className
+		)}
+	>
+		{#if typeof Content === 'string'}
+			{Content}
+		{:else}
+			<Content />
+		{/if}
+	</kbd>
+{/snippet}
 
 <svelte:document onkeydown={handleKeydown} />
 
-<Command.Dialog bind:open>
-	<Command.Input placeholder="Type a command or search..." bind:value={search} />
-	<Command.List>
-		<Command.Empty>No results found.</Command.Empty>
+<Dialog.Root bind:open>
+	<Dialog.Content
+		showCloseButton={false}
+		class="rounded-xl border-none bg-clip-padding p-2 pb-11 shadow-2xl ring-4 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-800"
+	>
+		<Dialog.Header class="sr-only">
+			<Dialog.Title>Command Palette</Dialog.Title>
+			<Dialog.Description>Search for commands and actions</Dialog.Description>
+		</Dialog.Header>
+		<Command.Root
+			class="rounded-none bg-transparent **:data-[slot=command-input-wrapper]:mb-0 **:data-[slot=command-input-wrapper]:!h-9 **:data-[slot=command-input-wrapper]:rounded-md **:data-[slot=command-input-wrapper]:border **:data-[slot=command-input-wrapper]:border-input **:data-[slot=command-input-wrapper]:bg-input/50 **:data-[slot=command-input]:!h-9 **:data-[slot=command-input]:py-0"
+		>
+			<Command.Input placeholder="Type a command or search..." bind:value={search} />
+			<Command.List class="no-scrollbar min-h-80 scroll-pb-1.5 scroll-pt-2">
+				<Command.Empty class="py-12 text-center text-sm text-muted-foreground">
+					No results found.
+				</Command.Empty>
 
-		{#if searchedTodos.length > 0}
-			<Command.Group heading="Todo Search Results">
-				{#each searchedTodos as todo (todo.id)}
-					<Command.Item onSelect={() => navigateTo(`/todos?highlight=${todo.id}`)}>
-						<CheckSquare class="mr-2 h-4 w-4" />
-						<span class="truncate">{todo.text}</span>
-						<span class="ml-auto text-xs text-muted-foreground">{todo.status}</span>
-					</Command.Item>
-				{/each}
-			</Command.Group>
-			<Command.Separator />
-		{/if}
+				{#if searchedTodos.length > 0}
+					<Command.Group
+						heading="Todo Search Results"
+						class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+					>
+						{#each searchedTodos as todo (todo.id)}
+							<Command.Item
+								onSelect={() => navigateTo(`/todos?highlight=${todo.id}`)}
+								class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+							>
+								<CheckSquare class="size-4" />
+								<span class="truncate">{todo.text}</span>
+								<span class="ml-auto text-xs text-muted-foreground">{todo.status}</span>
+							</Command.Item>
+						{/each}
+					</Command.Group>
+					<Command.Separator />
+				{/if}
 
-		{@const filteredNavCommands = search
-			? filterCommands(navigationCommands, search)
-			: navigationCommands}
-		{@const filteredTodoCommands = search ? filterCommands(todoCommands, search) : todoCommands}
-		{@const filteredQuickActions = search ? filterCommands(quickActions, search) : quickActions}
-		{@const isOnTodosPage = page.url.pathname === '/todos'}
+				{@const filteredNavCommands = search
+					? filterCommands(navigationCommands, search)
+					: navigationCommands}
+				{@const filteredTodoCommands = search ? filterCommands(todoCommands, search) : todoCommands}
+				{@const filteredQuickActions = search ? filterCommands(quickActions, search) : quickActions}
+				{@const isOnTodosPage = page.url.pathname === '/todos'}
 
-		{#if isOnTodosPage}
-			{#if filteredTodoCommands.length > 0}
-				<Command.Group heading="Todo Actions">
-					{#each filteredTodoCommands as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
+				{#if isOnTodosPage}
+					{#if filteredTodoCommands.length > 0}
+						<Command.Group
+							heading="Todo Actions"
+							class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredTodoCommands as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									{@const Icon = command.icon}
+									<Icon class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+
+					{#if filteredQuickActions.length > 0}
+						<Command.Separator />
+						<Command.Group
+							heading="Quick Actions"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredQuickActions as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									{@const Icon = command.icon}
+									<Icon class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+
+					{#if filteredNavCommands.length > 0}
+						<Command.Separator />
+						<Command.Group
+							heading="Navigation"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredNavCommands as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									<ArrowRight class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+				{:else}
+					{#if filteredNavCommands.length > 0}
+						<Command.Group
+							heading="Navigation"
+							class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredNavCommands as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									<ArrowRight class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+
+					{#if filteredTodoCommands.length > 0}
+						<Command.Separator />
+						<Command.Group
+							heading="Todo Actions"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredTodoCommands as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									{@const Icon = command.icon}
+									<Icon class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+
+					{#if filteredQuickActions.length > 0}
+						<Command.Separator />
+						<Command.Group
+							heading="Quick Actions"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each filteredQuickActions as command (command.id)}
+								<Command.Item
+									onSelect={() => executeCommand(command.id)}
+									onHighlight={() => (highlightedCommand = command)}
+									class="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50"
+								>
+									{@const Icon = command.icon}
+									<Icon class="size-4" />
+									<span>{command.label}</span>
+									{#if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+				{/if}
+			</Command.List>
+		</Command.Root>
+		<div
+			class="absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-b-xl border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium text-muted-foreground dark:border-t-neutral-700 dark:bg-neutral-800"
+		>
+			<div class="flex items-center gap-2">
+				{@render CommandMenuKbd({ content: CornerDownLeft })}
+				{#if footerActionText}
+					{footerActionText}
+				{:else}
+					Select Command
+				{/if}
+			</div>
+			<Separator orientation="vertical" class="!h-4" />
+			<div class="flex items-center gap-1">
+				{@render CommandMenuKbd({ content: isMac ? '⌘' : 'Ctrl' })}
+				{@render CommandMenuKbd({ content: 'K', class: 'aspect-square' })}
+				Command Palette
+			</div>
+			{#if highlightedCommand?.shortcut}
+				<Separator orientation="vertical" class="!h-4" />
+				<div class="flex items-center gap-1">
+					Shortcut: {highlightedCommand.shortcut}
+				</div>
 			{/if}
-
-			{#if filteredQuickActions.length > 0}
-				<Command.Separator />
-				<Command.Group heading="Quick Actions">
-					{#each filteredQuickActions as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			{/if}
-
-			{#if filteredNavCommands.length > 0}
-				<Command.Separator />
-				<Command.Group heading="Navigation">
-					{#each filteredNavCommands as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			{/if}
-		{:else}
-			{#if filteredNavCommands.length > 0}
-				<Command.Group heading="Navigation">
-					{#each filteredNavCommands as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			{/if}
-
-			{#if filteredTodoCommands.length > 0}
-				<Command.Separator />
-				<Command.Group heading="Todo Actions">
-					{#each filteredTodoCommands as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			{/if}
-
-			{#if filteredQuickActions.length > 0}
-				<Command.Separator />
-				<Command.Group heading="Quick Actions">
-					{#each filteredQuickActions as command (command.id)}
-						<Command.Item onSelect={() => executeCommand(command.id)}>
-							{@const Icon = command.icon}
-							<Icon class="mr-2 h-4 w-4" />
-							<span>{command.label}</span>
-							{#if command.shortcut}
-								<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-							{/if}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			{/if}
-		{/if}
-	</Command.List>
-</Command.Dialog>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
 
 <CreateTodoDialog bind:open={showCreateTodoDialog} />
