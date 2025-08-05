@@ -66,9 +66,11 @@
 	}
 
 	// If there are no organizations from the server, prompt creation dialog
-	if (organizations.length === 0) {
-		showCreateOrgDialog = true;
-	}
+	$effect(() => {
+		if (organizations.length === 0) {
+			showCreateOrgDialog = true;
+		}
+	});
 
 	const data = {
 		navMain: [
@@ -81,6 +83,11 @@
 				title: 'Todos',
 				url: '/todos',
 				icon: ListDetailsIcon
+			},
+			{
+				title: 'Organization',
+				url: '/organization/settings',
+				icon: SettingsIcon
 			},
 			{
 				title: 'Billing',
