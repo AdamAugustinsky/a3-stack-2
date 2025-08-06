@@ -37,10 +37,8 @@
 	import UserPlusIcon from '@tabler/icons-svelte/icons/user-plus';
 	import { authClient } from '$lib/auth-client';
 	import {
-		getFullOrganization,
 		updateOrganization,
 		deleteOrganization,
-		listInvitations,
 		inviteMember,
 		updateMemberRole,
 		removeMember,
@@ -54,10 +52,6 @@
 	const session = authClient.useSession();
 
 	// Organization details state
-	let organizationDetails = $state<any>(null);
-	let members = $state<any[]>([]);
-	let invitations = $state<any[]>([]);
-	let isLoading = $state(true);
 	let isEditing = $state(false);
 	let isSaving = $state(false);
 
@@ -70,7 +64,6 @@
 	let alert: { type: 'success' | 'error'; message: string } | undefined = $state();
 	let showInviteDialog = $state(false);
 	let showDeleteDialog = $state(false);
-	let selectedMember = $state<any>(null);
 
 	// Invitation form state
 	let inviteEmail = $state('');
@@ -78,58 +71,16 @@
 	let isInviting = $state(false);
 
 	// Current user's role in the organization
-	const currentUserRole = $derived(() => {
-		if (!organizationDetails || !$session.data?.user) return null;
-		const member = organizationDetails.members?.find(
-			(m: any) => m.userId === $session.data?.user.id
+	const currentUserRole = $derived.by(() => {
+		if (!$activeOrganization.data || !$session.data?.user) return '';
+		const member = $activeOrganization.data.members?.find(
+			(m) => m.userId === $session.data?.user.id
 		);
-		return member?.role || null;
+		return member?.role ?? '';
 	});
 
-	const isOwner = $derived(currentUserRole() === 'owner');
-	const isAdmin = $derived(currentUserRole() === 'admin' || isOwner);
-
-	// Load organization data
-	async function loadOrganizationData() {
-		if (!$activeOrganization.data) return;
-
-		try {
-			isLoading = true;
-			alert = undefined;
-
-			// Fetch full organization details
-			const orgData = await getFullOrganization({
-				organizationId: $activeOrganization.data.id,
-				membersLimit: 100
-			});
-
-			organizationDetails = orgData;
-			members = orgData.members || [];
-
-			// Load invitations
-			const invitationsData = await listInvitations({
-				organizationId: $activeOrganization.data.id
-			});
-			invitations = invitationsData;
-
-			// Initialize form values
-			nameValue = orgData.name;
-			slugValue = orgData.slug || '';
-			logoValue = orgData.logo || '';
-		} catch (error) {
-			console.error('Failed to load organization data:', error);
-			alert = { type: 'error', message: 'Failed to load organization data' };
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	// Load data on mount and when active organization changes
-	$effect(() => {
-		if ($activeOrganization.data) {
-			loadOrganizationData();
-		}
-	});
+	const isOwner = $derived(currentUserRole === 'owner');
+	const isAdmin = $derived(currentUserRole === 'admin' || isOwner);
 
 	// Format date
 	function formatDate(dateString: string | Date) {
@@ -156,14 +107,14 @@
 
 	// Save organization details
 	async function handleSaveDetails() {
-		if (!organizationDetails) return;
+		if (!$activeOrganization.data) return;
 
 		isSaving = true;
 		alert = undefined;
 
 		try {
 			await updateOrganization({
-				organizationId: organizationDetails.id,
+				organizationId: $activeOrganization.data.id,
 				data: {
 					name: nameValue,
 					slug: slugValue,
@@ -173,7 +124,7 @@
 
 			alert = { type: 'success', message: 'Organization details updated successfully.' };
 			isEditing = false;
-			await loadOrganizationData();
+			$activeOrganization.refetch();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to update organization details.' };
 			console.error('Failed to save organization:', error);
@@ -184,31 +135,31 @@
 
 	// Cancel editing
 	function handleCancelEdit() {
-		if (!organizationDetails) return;
-		nameValue = organizationDetails.name;
-		slugValue = organizationDetails.slug || '';
-		logoValue = organizationDetails.logo || '';
+		if (!$activeOrganization.data) return;
+		nameValue = $activeOrganization.data.name;
+		slugValue = $activeOrganization.data.slug || '';
+		logoValue = $activeOrganization.data.logo || '';
 		isEditing = false;
 		alert = undefined;
 	}
 
 	// Send invitation
 	async function handleSendInvitation() {
-		if (!inviteEmail || !organizationDetails) return;
+		if (!inviteEmail || !$activeOrganization.data) return;
 
 		isInviting = true;
 		try {
 			await inviteMember({
 				email: inviteEmail,
 				role: inviteRole,
-				organizationId: organizationDetails.id
+				organizationId: $activeOrganization.data.id
 			});
 
 			showInviteDialog = false;
 			inviteEmail = '';
 			inviteRole = 'member';
 			alert = { type: 'success', message: 'Invitation sent successfully.' };
-			await loadOrganizationData();
+			$activeOrganization.refetch();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to send invitation.' };
 			console.error('Failed to send invitation:', error);
@@ -222,7 +173,7 @@
 		try {
 			await cancelInvitation({ invitationId });
 			alert = { type: 'success', message: 'Invitation cancelled.' };
-			await loadOrganizationData();
+			$activeOrganization.refetch();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to cancel invitation.' };
 			console.error('Failed to cancel invitation:', error);
@@ -231,16 +182,16 @@
 
 	// Update member role
 	async function handleUpdateMemberRole(memberId: string, newRole: string) {
-		if (!organizationDetails) return;
+		if (!$activeOrganization.data) return;
 
 		try {
 			await updateMemberRole({
 				memberId,
-				role: newRole as any,
-				organizationId: organizationDetails.id
+				role: newRole,
+				organizationId: $activeOrganization.data.id
 			});
 			alert = { type: 'success', message: 'Member role updated.' };
-			await loadOrganizationData();
+			$activeOrganization.refetch();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to update member role.' };
 			console.error('Failed to update member role:', error);
@@ -249,15 +200,15 @@
 
 	// Remove member
 	async function handleRemoveMember(memberId: string, userEmail: string) {
-		if (!organizationDetails) return;
+		if (!$activeOrganization.data) return;
 
 		try {
 			await removeMember({
 				memberIdOrEmail: userEmail,
-				organizationId: organizationDetails.id
+				organizationId: $activeOrganization.data.id
 			});
 			alert = { type: 'success', message: 'Member removed from organization.' };
-			await loadOrganizationData();
+			$activeOrganization.refetch();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to remove member.' };
 			console.error('Failed to remove member:', error);
@@ -266,11 +217,11 @@
 
 	// Delete organization
 	async function handleDeleteOrganization() {
-		if (!organizationDetails) return;
+		if (!$activeOrganization.data) return;
 
 		try {
 			await deleteOrganization({
-				organizationId: organizationDetails.id
+				organizationId: $activeOrganization.data.id
 			});
 
 			// Clear active organization and redirect
@@ -313,7 +264,11 @@
 			<p class="text-muted-foreground">Manage your organization, members, and permissions.</p>
 		</div>
 		{#if isAdmin && !isEditing}
-			<Button variant="outline" onclick={() => (isEditing = true)} disabled={isLoading}>
+			<Button
+				variant="outline"
+				onclick={() => (isEditing = true)}
+				disabled={$activeOrganization.isPending}
+			>
 				<BuildingIcon class="mr-2 size-4 shrink-0" />
 				<span class="truncate">Edit Organization</span>
 			</Button>
@@ -336,7 +291,7 @@
 		</div>
 	{/if}
 
-	{#if isLoading}
+	{#if $activeOrganization.isPending}
 		<!-- Loading skeleton -->
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
 			<Card class="md:col-span-2">
@@ -359,25 +314,30 @@
 				</Card>
 			</div>
 		</div>
-	{:else if organizationDetails}
+	{:else if $activeOrganization.data}
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
 			<!-- Left: Organization Details -->
 			<Card class="md:col-span-2">
 				<CardHeader class="pb-1">
 					<div class="flex items-center gap-4">
 						<Avatar class="size-16 shrink-0 sm:size-20">
-							{#if organizationDetails.logo}
-								<AvatarImage src={organizationDetails.logo} alt={organizationDetails.name} />
+							{#if $activeOrganization.data.logo}
+								<AvatarImage
+									src={$activeOrganization.data.logo}
+									alt={$activeOrganization.data.name}
+								/>
 							{/if}
 							<AvatarFallback class="text-base sm:text-lg">
-								{organizationDetails.name.slice(0, 2).toUpperCase()}
+								{$activeOrganization.data.name.slice(0, 2).toUpperCase()}
 							</AvatarFallback>
 						</Avatar>
 						<div class="min-w-0 space-y-1">
-							<CardTitle class="truncate text-xl sm:text-2xl">{organizationDetails.name}</CardTitle>
-							{#if organizationDetails.slug}
+							<CardTitle class="truncate text-xl sm:text-2xl"
+								>{$activeOrganization.data.name}</CardTitle
+							>
+							{#if $activeOrganization.data.slug}
 								<CardDescription class="truncate text-sm sm:text-base">
-									/{organizationDetails.slug}
+									/{$activeOrganization.data.slug}
 								</CardDescription>
 							{/if}
 						</div>
@@ -405,7 +365,7 @@
 							{:else}
 								<div class="flex items-center space-x-2 py-1">
 									<BuildingIcon class="size-4 shrink-0 text-muted-foreground" />
-									<span class="truncate text-sm">{organizationDetails.name}</span>
+									<span class="truncate text-sm">{$activeOrganization.data.name}</span>
 								</div>
 							{/if}
 						</div>
@@ -426,7 +386,7 @@
 							{:else}
 								<div class="flex items-center space-x-2 py-1">
 									<span class="truncate font-mono text-sm"
-										>/{organizationDetails.slug || 'no-slug'}</span
+										>/{$activeOrganization.data.slug || 'no-slug'}</span
 									>
 								</div>
 							{/if}
@@ -445,9 +405,9 @@
 								<p class="text-xs text-muted-foreground">
 									Provide a URL to your organization's logo.
 								</p>
-							{:else if organizationDetails.logo}
+							{:else if $activeOrganization.data.logo}
 								<div class="flex items-center space-x-2 py-1">
-									<span class="truncate text-sm">{organizationDetails.logo}</span>
+									<span class="truncate text-sm">{$activeOrganization.data.logo}</span>
 								</div>
 							{:else}
 								<span class="text-sm text-muted-foreground">No logo set</span>
@@ -483,7 +443,7 @@
 								<span class="text-sm font-medium">Created</span>
 							</div>
 							<span class="truncate text-sm text-muted-foreground">
-								{formatDate(organizationDetails.createdAt)}
+								{formatDate($activeOrganization.data.createdAt)}
 							</span>
 						</div>
 
@@ -494,13 +454,13 @@
 							</div>
 							<div class="flex max-w-[65%] items-center gap-2">
 								<span class="truncate font-mono text-xs text-muted-foreground">
-									{organizationDetails.id}
+									{$activeOrganization.data.id}
 								</span>
 								<Button
 									size="sm"
 									variant="outline"
 									class="h-7 shrink-0"
-									onclick={() => copy(organizationDetails.id)}
+									onclick={() => copy($activeOrganization.data?.id ?? '')}
 								>
 									Copy
 								</Button>
@@ -513,23 +473,21 @@
 								<span class="text-sm font-medium">Members</span>
 							</div>
 							<span class="text-sm font-medium whitespace-nowrap">
-								{members.length}
-								{members.length === 1 ? 'member' : 'members'}
+								{$activeOrganization.data?.members.length}
+								{$activeOrganization.data?.members.length === 1 ? 'member' : 'members'}
 							</span>
 						</div>
 
-						{#if currentUserRole()}
-							{@const RoleIcon = getRoleIcon(currentUserRole())}
-							<div class="flex items-center justify-between gap-3 py-1">
-								<div class="flex min-w-0 items-center space-x-2">
-									<RoleIcon class="size-4 shrink-0 text-muted-foreground" />
-									<span class="text-sm font-medium">Your Role</span>
-								</div>
-								<Badge variant={getRoleBadgeVariant(currentUserRole())}>
-									{currentUserRole()}
-								</Badge>
+						{@const RoleIcon = getRoleIcon(currentUserRole)}
+						<div class="flex items-center justify-between gap-3 py-1">
+							<div class="flex min-w-0 items-center space-x-2">
+								<RoleIcon class="size-4 shrink-0 text-muted-foreground" />
+								<span class="text-sm font-medium">Your Role</span>
 							</div>
-						{/if}
+							<Badge variant={getRoleBadgeVariant(currentUserRole)}>
+								{currentUserRole}
+							</Badge>
+						</div>
 					</CardContent>
 				</Card>
 
@@ -576,7 +534,7 @@
 				</div>
 			</CardHeader>
 			<CardContent>
-				{#if members.length > 0}
+				{#if $activeOrganization.data?.members.length > 0}
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -589,7 +547,7 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#each members as member}
+							{#each $activeOrganization.data?.members as member (member.id)}
 								<TableRow>
 									<TableCell>
 										<div class="flex items-center gap-3">
@@ -657,7 +615,7 @@
 		</Card>
 
 		<!-- Invitations Section -->
-		{#if invitations.length > 0}
+		{#if $activeOrganization.data && $activeOrganization.data.invitations.length > 0}
 			<Card class="mt-5">
 				<CardHeader class="pb-1">
 					<CardTitle>Pending Invitations</CardTitle>
@@ -676,7 +634,7 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#each invitations as invitation}
+							{#each $activeOrganization.data.invitations as invitation (invitation.id)}
 								<TableRow>
 									<TableCell>
 										<div class="flex items-center gap-2">
@@ -775,7 +733,8 @@
 			<AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
 			<AlertDialog.Description>
 				This action cannot be undone. This will permanently delete the organization
-				<span class="font-semibold">{organizationDetails?.name}</span> and remove all associated data.
+				<span class="font-semibold">{$activeOrganization.data?.name}</span> and remove all associated
+				data.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
