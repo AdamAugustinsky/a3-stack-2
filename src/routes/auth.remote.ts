@@ -1,7 +1,6 @@
-import { form, command } from '$app/server';
+import { form, command, getRequestEvent } from '$app/server';
 import { auth } from '@/server/auth';
 import { error, redirect } from '@sveltejs/kit';
-import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
 
 // Validation schemas
@@ -54,9 +53,13 @@ export const signin = form(async (data) => {
 		asResponse: true
 	});
 
+	const organizations = await auth.api.listOrganizations({
+		headers: getRequestEvent().request.headers
+	});
+
 	switch (response.status) {
 		case 200:
-			return redirect(303, '/dashboard');
+			return redirect(303, `${organizations[0].slug}/dashboard`);
 		case 401:
 			return error(401, 'Invalid email or password');
 		case 404:
@@ -111,9 +114,13 @@ export const signup = form(async (data) => {
 		asResponse: true
 	});
 
+	const organizations = await auth.api.listOrganizations({
+		headers: response.headers
+	});
+
 	switch (response.status) {
 		case 200:
-			return redirect(303, '/dashboard');
+			return redirect(303, `${organizations[0].slug}/dashboard`);
 		case 409:
 			return error(409, 'An account with this email already exists');
 		case 400:
