@@ -66,40 +66,30 @@
 	let sorting = $state<SortingState>([]);
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
-	// Create derived state for columnFilters from URL params
-	const columnFilters = $derived.by(() => {
-		const urlParams = page.url.searchParams;
-		const filters: ColumnFiltersState = [];
+    // Local state for column filters; sync with URL, but avoid blurring the input while typing
+    let columnFilters = $state<ColumnFiltersState>([]);
 
-		// Handle status filter (multiple values)
-		const statuses = urlParams.getAll('status');
-		if (statuses.length > 0) {
-			filters.push({ id: 'status', value: statuses });
-		}
+    function parseFiltersFromUrl(): ColumnFiltersState {
+        const urlParams = page.url.searchParams;
+        const filters: ColumnFiltersState = [];
+        const statuses = urlParams.getAll('status');
+        if (statuses.length > 0) filters.push({ id: 'status', value: statuses });
+        const priorities = urlParams.getAll('priority');
+        if (priorities.length > 0) filters.push({ id: 'priority', value: priorities });
+        const search = urlParams.get('search');
+        if (search) filters.push({ id: 'text', value: search });
+        const labels = urlParams.getAll('label');
+        if (labels.length > 0) filters.push({ id: 'label', value: labels });
+        return filters;
+    }
 
-		// Handle priority filter (multiple values)
-		const priorities = urlParams.getAll('priority');
-		if (priorities.length > 0) {
-			filters.push({ id: 'priority', value: priorities });
-		}
+    // Initialize from URL and keep in sync when URL changes externally
+    $effect(() => {
+        columnFilters = parseFiltersFromUrl();
+    });
 
-		// Handle text search
-		const search = urlParams.get('search');
-		if (search) {
-			filters.push({ id: 'text', value: search });
-		}
-
-		// Handle label filter (multiple values)
-		const labels = urlParams.getAll('label');
-		if (labels.length > 0) {
-			filters.push({ id: 'label', value: labels });
-		}
-
-		return filters;
-	});
-
-	// Function to update URL params when filters change
-	function updateUrlFromFilters(filters: ColumnFiltersState) {
+    // Function to update URL params when filters change
+    function updateUrlFromFilters(filters: ColumnFiltersState) {
 		const url = new URL(page.url);
 
 		// Clear existing filter params
@@ -134,9 +124,11 @@
 			}
 		}
 
-		// Navigate to the new URL without triggering a page reload
-		goto(url.toString(), { replaceState: true, noScroll: true });
+        // Navigate to the new URL. Keep focus and scroll position.
+        goto(url.toString(), { replaceState: true, keepfocus: true, noscroll: true });
 	}
+
+    // (debounce removed for text search; we now only update URL on non-text changes)
 
 	const columns: ColumnDef<Task>[] = [
 		{
@@ -267,7 +259,7 @@
 				return pagination;
 			}
 		},
-		columns,
+        columns,
 		enableRowSelection: true,
 		onRowSelectionChange: (updater) => {
 			if (typeof updater === 'function') {
@@ -283,16 +275,26 @@
 				sorting = updater;
 			}
 		},
-		onColumnFiltersChange: (updater) => {
-			// When filters change in the table, update the URL
-			let newFilters: ColumnFiltersState;
-			if (typeof updater === 'function') {
-				newFilters = updater(columnFilters);
-			} else {
-				newFilters = updater;
-			}
-			updateUrlFromFilters(newFilters);
-		},
+        onColumnFiltersChange: (updater) => {
+            // Update local state immediately so filtering feels instant
+            const previous = columnFilters;
+            const next = typeof updater === 'function' ? updater(previous) : updater;
+            columnFilters = next;
+
+            // Determine if non-text filters changed. If so, update URL immediately.
+            const signature = (filters: ColumnFiltersState) => {
+                const byId = new Map<string, unknown>();
+                for (const f of filters) {
+                    if (f.id === 'text') continue;
+                    if (Array.isArray(f.value)) byId.set(f.id, [...f.value].slice().sort());
+                    else byId.set(f.id, f.value);
+                }
+                return JSON.stringify(Object.fromEntries([...byId.entries()].sort()));
+            };
+            if (signature(previous) !== signature(next)) {
+                updateUrlFromFilters(next);
+            }
+        },
 		onColumnVisibilityChange: (updater) => {
 			if (typeof updater === 'function') {
 				columnVisibility = updater(columnVisibility);

@@ -203,16 +203,10 @@
 						>
 							<SearchIcon2 class="size-4" />
 							<span class="flex-1 text-left">Search...</span>
-							<div class="ml-auto flex gap-0.5">
-								<Kbd
-									content={isMac ? '⌘' : 'Ctrl'}
-									class="h-4 border-neutral-200/50 bg-background/80 text-[0.65rem] dark:border-neutral-700/50"
-								/>
-								<Kbd
-									content="K"
-									class="h-4 border-neutral-200/50 bg-background/80 text-[0.65rem] dark:border-neutral-700/50"
-								/>
-							</div>
+                            <div class="ml-auto flex gap-0.5">
+                                <Kbd content={isMac ? '⌘' : 'Ctrl'} />
+                                <Kbd content="K" />
+                            </div>
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>

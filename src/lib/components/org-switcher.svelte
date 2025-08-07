@@ -77,7 +77,7 @@
 		if (page.params.organization_slug && org.slug)
 			goto(page.url.pathname.replace(page.params.organization_slug, org.slug), {
 				replaceState: true,
-				noScroll: true
+                noScroll: true
 			});
 	}
 </script>

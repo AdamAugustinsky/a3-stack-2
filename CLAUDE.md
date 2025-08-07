@@ -504,6 +504,31 @@ import {Button} from '$lib/components/ui/button';
 import * as Card from "$lib/components/ui/card/index.js";
 ````
 
+### Keyboard Shortcut Indicators (Kbd)
+
+- Use the shared `Kbd` component for all inline keyboard hints across the app.
+- Location: `src/lib/components/kbd.svelte`
+- Purpose: Standardizes appearance and spacing for hints like `/`, `⌘` + `K`, etc.
+- Example usage:
+
+```svelte
+<Kbd content="/" />
+<div class="flex gap-0.5">
+  <Kbd content="⌘" />
+  <Kbd content="K" />
+  <!-- Or platform-aware: 'Ctrl' + 'K' on non-mac -->
+</div>
+<!-- On primary buttons / colored surfaces -->
+<Kbd content="C" variant="onPrimary" />
+```
+
+Design notes:
+- Unified style: subtle border, background with slight translucency, compact height, tiny type, slight shadow for contrast.
+- Do not render raw `<kbd>` directly; always use `Kbd` for consistency.
+- For positioning inside inputs, absolutely position `Kbd` and add right padding to the input so text does not overlap.
+ - Use `variant="onPrimary"` when placing inside primary buttons or colored surfaces so the hint has correct contrast.
+
+
 ### Path Aliases
 
 - `@/*` → `./src/lib/*` (configured in svelte.config.js)

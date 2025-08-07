@@ -157,9 +157,7 @@
 		>
 			<CirclePlusIcon class="mr-2 h-4 w-4" />
 			Add Task
-			<Kbd class="ml-1.5 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
-				<span class="text-xs font-semibold">C</span>
-			</Kbd>
+            <Kbd content="C" variant="onPrimary" class="ml-1.5" />
 		</Button>
 	</div>
 	{#if todosQuery.loading}
