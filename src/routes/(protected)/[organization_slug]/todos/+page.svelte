@@ -151,10 +151,7 @@
 			<h2 class="text-2xl font-semibold tracking-tight">Todos!</h2>
 			<p class="text-muted-foreground">Here&apos;s a list of your tasks for this month.</p>
 		</div>
-		<Button 
-			onclick={handleOpenCreateDialog} 
-			class="group bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-		>
+		<Button onclick={handleOpenCreateDialog} variant="default" class="group">
 			<CirclePlusIcon class="mr-2 h-4 w-4" />
 			Add Task
             <Kbd content="C" variant="onPrimary" class="ml-1.5" />
