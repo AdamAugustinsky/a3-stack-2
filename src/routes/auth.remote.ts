@@ -111,22 +111,28 @@ export const signup = form(async (data) => {
 		body: {
 			email,
 			password,
-			name,
-			callbackURL: '/dashboard'
+			name
 		},
 		asResponse: true
 	});
 
-	const organizations = await auth.api.listOrganizations({
-		headers: response.headers
-	});
-
 	switch (response.status) {
-		case 200:
+		case 200: {
+			// Ensure the user is signed in after sign up
+			await auth.api.signInEmail({
+				body: { email, password },
+				asResponse: false
+			});
+
+			const organizations = await auth.api.listOrganizations({
+				headers: getRequestEvent().request.headers
+			});
+
 			if (Array.isArray(organizations) && organizations.length > 0) {
 				return redirect(303, `/${organizations[0].slug}/dashboard`);
 			}
 			return redirect(303, '/create-organization');
+		}
 		case 409:
 			return error(409, 'An account with this email already exists');
 		case 400:
