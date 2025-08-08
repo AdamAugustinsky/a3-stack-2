@@ -5,7 +5,7 @@
 	import { authClient } from '$lib/auth-client';
 	import { goto } from '$app/navigation';
 
-	let { data = $bindable(), children } = $props<{
+	let { children } = $props<{
 		data: LayoutData;
 		children: import('svelte').Snippet;
 	}>();
@@ -18,8 +18,8 @@
 	$effect(() => {
 		// Check if there's an active organization
 		if (!$activeOrganization.data && !loading) {
-			// No active organization, redirect to dashboard
-			goto('/dashboard');
+			// No active organization, redirect to global dashboard
+			goto('/sign-in');
 		}
 		loading = false;
 	});

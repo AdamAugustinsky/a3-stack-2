@@ -47,8 +47,7 @@ export const signin = form(async (data) => {
 	const response = await auth.api.signInEmail({
 		body: {
 			email,
-			password,
-			callbackURL: '/dashboard'
+			password
 		},
 		asResponse: true
 	});
@@ -59,7 +58,7 @@ export const signin = form(async (data) => {
 
 	switch (response.status) {
 		case 200:
-			return redirect(303, `${organizations[0].slug}/dashboard`);
+			return redirect(303, `/${organizations[0].slug}/dashboard`);
 		case 401:
 			return error(401, 'Invalid email or password');
 		case 404:
@@ -120,7 +119,7 @@ export const signup = form(async (data) => {
 
 	switch (response.status) {
 		case 200:
-			return redirect(303, `${organizations[0].slug}/dashboard`);
+			return redirect(303, `/${organizations[0].slug}/dashboard`);
 		case 409:
 			return error(409, 'An account with this email already exists');
 		case 400:

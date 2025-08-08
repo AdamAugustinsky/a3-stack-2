@@ -8,7 +8,8 @@
 		statuses,
 		priorities
 	} from '@routes/(protected)/[organization_slug]/todos/components/data';
-	import { ExternalLinkIcon } from '@lucide/svelte';
+    import { ExternalLinkIcon } from '@lucide/svelte';
+    import { page } from '$app/state';
 
 	const todosQuery = getTodos();
 
@@ -61,7 +62,7 @@
 			<Card.Title class="text-lg font-semibold">Recent Tasks</Card.Title>
 			<Card.Description>Latest tasks and their current status</Card.Description>
 		</div>
-		<Button variant="outline" size="sm" href="/todos">
+        <Button variant="outline" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
 			View All
 			<ExternalLinkIcon class="ml-2 h-4 w-4" />
 		</Button>
@@ -132,7 +133,7 @@
 
 			{#if todosQuery.current.length > 8}
 				<div class="mt-4 text-center">
-					<Button variant="ghost" size="sm" href="/todos">
+                    <Button variant="ghost" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
 						View {todosQuery.current.length - 8} more tasks
 					</Button>
 				</div>
@@ -145,7 +146,7 @@
 				<h3 class="mt-2 text-sm font-semibold text-muted-foreground">No tasks yet</h3>
 				<p class="mt-1 text-sm text-muted-foreground">Get started by creating your first task.</p>
 				<div class="mt-4">
-					<Button size="sm" href="/todos">Create Task</Button>
+                    <Button size="sm" href={'/' + page.params.organization_slug + '/todos'}>Create Task</Button>
 				</div>
 			</div>
 		{/if}

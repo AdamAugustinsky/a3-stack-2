@@ -125,7 +125,7 @@
 		}
 
         // Navigate to the new URL. Keep focus and scroll position.
-        goto(url.toString(), { replaceState: true, keepfocus: true, noscroll: true });
+        goto(url.toString(), { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
     // (debounce removed for text search; we now only update URL on non-text changes)

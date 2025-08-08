@@ -77,14 +77,14 @@
 			keywords: ['profile', 'settings', 'user'],
 			type: 'navigation'
 		},
-		{
-			id: 'nav-organization',
-			label: 'Organization',
-			icon: Building,
-			action: () => navigateTo('/organization'),
-			keywords: ['company', 'team'],
-			type: 'navigation'
-		},
+        {
+            id: 'nav-organization',
+            label: 'Organization',
+            icon: Building,
+            action: () => navigateTo('/organization/settings'),
+            keywords: ['company', 'team'],
+            type: 'navigation'
+        },
 		{
 			id: 'nav-billing',
 			label: 'Billing',
@@ -448,7 +448,7 @@ ${modKey}R - Refresh Data
 					: navigationCommands}
 				{@const filteredTodoCommands = search ? filterCommands(todoCommands, search) : todoCommands}
 				{@const filteredQuickActions = search ? filterCommands(quickActions, search) : quickActions}
-				{@const isOnTodosPage = page.url.pathname === '/todos'}
+                {@const isOnTodosPage = page.url.pathname.endsWith('/todos')}
 
 				{#if isOnTodosPage}
 					{#if filteredTodoCommands.length > 0}
@@ -457,9 +457,8 @@ ${modKey}R - Refresh Data
 							class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
 							{#each filteredTodoCommands as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
@@ -480,9 +479,8 @@ ${modKey}R - Refresh Data
 							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
 							{#each filteredQuickActions as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
@@ -503,9 +501,8 @@ ${modKey}R - Refresh Data
 							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
 							{#each filteredNavCommands as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									<ArrowRight class="size-4" />
@@ -524,9 +521,8 @@ ${modKey}R - Refresh Data
 							class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
 							{#each filteredNavCommands as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									<ArrowRight class="size-4" />
@@ -546,9 +542,8 @@ ${modKey}R - Refresh Data
 							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
 							{#each filteredTodoCommands as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}
@@ -568,10 +563,9 @@ ${modKey}R - Refresh Data
 							heading="Quick Actions"
 							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
-							{#each filteredQuickActions as command (command.id)}
-								<Command.Item
-									onSelect={() => executeCommand(command.id)}
-									onHighlight={() => (highlightedCommand = command)}
+                            {#each filteredQuickActions as command (command.id)}
+                                <Command.Item
+                                    onSelect={() => executeCommand(command.id)}
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									{@const Icon = command.icon}

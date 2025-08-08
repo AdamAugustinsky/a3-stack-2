@@ -8,7 +8,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { logout } from '../../routes/auth.remote';
-	import { goto } from '$app/navigation';
+import { goto } from '$app/navigation';
+import { navigateTo } from '@/client.utils.svelte';
 
 	import type { User } from 'better-auth';
 
@@ -26,8 +27,8 @@
 
 	async function handleLogout() {
 		try {
-			await logout();
-			goto('/sign-in');
+            await logout();
+            goto('/sign-in');
 		} catch (error) {
 			console.error('Logout failed:', error);
 		}
@@ -80,11 +81,11 @@
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item onclick={() => goto('/account')}>
+                    <DropdownMenu.Item onclick={() => navigateTo('/account')}>
 						<UserCircleIcon />
 						Account
 					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => goto('/organization/billing')}>
+                    <DropdownMenu.Item onclick={() => navigateTo('/organization/billing')}>
 						<CreditCardIcon />
 						Billing
 					</DropdownMenu.Item>

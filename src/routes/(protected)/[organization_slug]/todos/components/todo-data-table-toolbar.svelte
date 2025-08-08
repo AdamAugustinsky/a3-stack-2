@@ -72,7 +72,7 @@
         }
 
         filterRef?.blur();
-        goto(url.toString(), { replaceState: true, keepfocus: false, noscroll: true });
+        goto(url.toString(), { replaceState: true, keepFocus: false, noScroll: true });
     }
 </script>
 

@@ -10,7 +10,8 @@
 	import CalendarIcon from '@tabler/icons-svelte/icons/calendar';
 	import UsersIcon from '@tabler/icons-svelte/icons/users';
 	import DatabaseIcon from '@tabler/icons-svelte/icons/database';
-	import BuildingIcon from '@tabler/icons-svelte/icons/building';
+    import BuildingIcon from '@tabler/icons-svelte/icons/building';
+    import { page } from '$app/state';
 
 	import type { Subscription } from '@better-auth/stripe';
 
@@ -142,8 +143,9 @@
 			errorMessage = null;
 
 			const isAnnual = billingPeriod === 'annual';
-			const successUrl = `${window.location.origin}/organization/billing?upgraded=true`;
-			const cancelUrl = `${window.location.origin}/organization/billing`;
+            const orgSlug = page.params.organization_slug;
+            const successUrl = `${window.location.origin}/${orgSlug}/organization/billing?upgraded=true`;
+            const cancelUrl = `${window.location.origin}/${orgSlug}/organization/billing`;
 
 			const { error } = await authClient.subscription.upgrade({
 				plan: planName,
@@ -183,7 +185,7 @@
 			const { error } = await authClient.subscription.cancel({
 				referenceId: activeOrg.id,
 				subscriptionId: subscription.stripeSubscriptionId,
-				returnUrl: `${window.location.origin}/organization/billing`
+                returnUrl: `${window.location.origin}/${page.params.organization_slug}/organization/billing`
 			});
 
 			if (error) {
@@ -208,10 +210,10 @@
 
 	// Load data when active organization changes and check for upgrade success
 	$effect(() => {
-		const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('upgraded') === 'true') {
 			// Remove the query parameter
-			window.history.replaceState({}, '', '/organization/billing');
+            window.history.replaceState({}, '', `/${page.params.organization_slug}/organization/billing`);
 		}
 
 		// Only load data if we have an active organization

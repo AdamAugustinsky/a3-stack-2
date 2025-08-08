@@ -46,6 +46,7 @@
 		setActiveOrganization
 	} from '../organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { navigateTo } from '@/client.utils.svelte';
 
 	// Reactive organization data
 	const activeOrganization = authClient.useActiveOrganization();
@@ -181,7 +182,7 @@
 	}
 
 	// Update member role
-	async function handleUpdateMemberRole(memberId: string, newRole: string) {
+	async function handleUpdateMemberRole(memberId: string, newRole: 'member' | 'admin' | 'owner') {
 		if (!$activeOrganization.data) return;
 
 		try {
@@ -227,7 +228,8 @@
 			// Clear active organization and redirect
 			await setActiveOrganization({ organizationId: null });
 			await invalidateAll();
-			goto('/dashboard');
+
+			goto('/sign-in');
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to delete organization.' };
 			console.error('Failed to delete organization:', error);
@@ -571,7 +573,11 @@
 										{#if isOwner && member.userId !== $session.data?.user?.id && member.role !== 'owner'}
 											<select
 												value={member.role}
-												onchange={(e) => handleUpdateMemberRole(member.id, e.currentTarget.value)}
+												onchange={(e) =>
+													handleUpdateMemberRole(
+														member.id,
+														e.currentTarget.value as 'member' | 'admin' | 'owner'
+													)}
 												class="flex h-8 w-[100px] items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
 											>
 												<option value="member">Member</option>
