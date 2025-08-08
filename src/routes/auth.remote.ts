@@ -52,13 +52,17 @@ export const signin = form(async (data) => {
 		asResponse: true
 	});
 
+	// Use response.headers for subsequent API calls to reflect the new session
 	const organizations = await auth.api.listOrganizations({
 		headers: getRequestEvent().request.headers
 	});
 
 	switch (response.status) {
 		case 200:
-			return redirect(303, `/${organizations[0].slug}/dashboard`);
+			if (Array.isArray(organizations) && organizations.length > 0) {
+				return redirect(303, `/${organizations[0].slug}/dashboard`);
+			}
+			return redirect(303, '/create-organization');
 		case 401:
 			return error(401, 'Invalid email or password');
 		case 404:
@@ -119,7 +123,10 @@ export const signup = form(async (data) => {
 
 	switch (response.status) {
 		case 200:
-			return redirect(303, `/${organizations[0].slug}/dashboard`);
+			if (Array.isArray(organizations) && organizations.length > 0) {
+				return redirect(303, `/${organizations[0].slug}/dashboard`);
+			}
+			return redirect(303, '/create-organization');
 		case 409:
 			return error(409, 'An account with this email already exists');
 		case 400:

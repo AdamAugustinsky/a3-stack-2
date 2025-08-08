@@ -9,9 +9,10 @@
 
 	if ($session.data) {
 		if ($organizations.data && $organizations.data?.length > 0) {
-			goto(`${$organizations.data[0].slug}/dashboard`);
+			goto(`/${$organizations.data[0].slug}/dashboard`);
 		} else {
 			// here we should redirect the user to a page where he is obligated to create an organization.
+			goto('/create-organization');
 		}
 	}
 </script>
